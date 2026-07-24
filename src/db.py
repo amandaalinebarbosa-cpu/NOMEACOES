@@ -11,7 +11,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://sigeo:sigeo@localhost:5432/sigeo")
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL", "postgresql://sigeo:sigeo@localhost:5432/sigeo"
+)
 
 
 @contextmanager
@@ -31,7 +33,8 @@ def upsert_tribunal(cur, sigla: str, nome: str | None = None) -> int:
     cur.execute(
         """
         INSERT INTO tribunal (sigla, nome) VALUES (%s, %s)
-        ON CONFLICT (sigla) DO UPDATE SET nome = COALESCE(EXCLUDED.nome, tribunal.nome)
+        ON CONFLICT (sigla) DO UPDATE
+          SET nome = COALESCE(EXCLUDED.nome, tribunal.nome)
         RETURNING id
         """,
         (sigla, nome),
@@ -39,22 +42,10 @@ def upsert_tribunal(cur, sigla: str, nome: str | None = None) -> int:
     return cur.fetchone()[0]
 
 
-def upsert_nomeado(cur, nome: str, cpf: str | None) -> int:
+def upsert_unidade(cur, tribunal_id: int, nome: str) -> int:
     cur.execute(
         """
-        INSERT INTO nomeado (nome, cpf) VALUES (%s, %s)
-        ON CONFLICT (nome, cpf) DO UPDATE SET nome = EXCLUDED.nome
-        RETURNING id
-        """,
-        (nome, cpf),
-    )
-    return cur.fetchone()[0]
-
-
-def upsert_orgao(cur, tribunal_id: int, nome: str) -> int:
-    cur.execute(
-        """
-        INSERT INTO orgao_julgador (tribunal_id, nome) VALUES (%s, %s)
+        INSERT INTO unidade (tribunal_id, nome) VALUES (%s, %s)
         ON CONFLICT (tribunal_id, nome) DO UPDATE SET nome = EXCLUDED.nome
         RETURNING id
         """,
@@ -63,17 +54,28 @@ def upsert_orgao(cur, tribunal_id: int, nome: str) -> int:
     return cur.fetchone()[0]
 
 
+def upsert_profissional(cur, nome: str) -> int:
+    cur.execute(
+        """
+        INSERT INTO profissional (nome) VALUES (%s)
+        ON CONFLICT (nome) DO UPDATE SET nome = EXCLUDED.nome
+        RETURNING id
+        """,
+        (nome,),
+    )
+    return cur.fetchone()[0]
+
+
 def insert_nomeacao(cur, row: dict) -> bool:
-    """Insere nomeação. Retorna True se foi novo registro."""
     cur.execute(
         """
         INSERT INTO nomeacao
-            (tribunal_id, orgao_julgador_id, nomeado_id, processo, tipo_funcao,
-             especialidade, data_nomeacao, situacao, valor, magistrado, fonte_url, raw)
-        VALUES (%(tribunal_id)s, %(orgao_julgador_id)s, %(nomeado_id)s, %(processo)s,
-                %(tipo_funcao)s, %(especialidade)s, %(data_nomeacao)s, %(situacao)s,
-                %(valor)s, %(magistrado)s, %(fonte_url)s, %(raw)s)
-        ON CONFLICT (tribunal_id, processo, nomeado_id, data_nomeacao, tipo_funcao)
+            (processo, tribunal_id, unidade_id, profissional_id,
+             data_nomeacao, valor, situacao, fonte_url, raw)
+        VALUES (%(processo)s, %(tribunal_id)s, %(unidade_id)s,
+                %(profissional_id)s, %(data_nomeacao)s, %(valor)s,
+                %(situacao)s, %(fonte_url)s, %(raw)s)
+        ON CONFLICT (processo, profissional_id, data_nomeacao, situacao)
         DO NOTHING
         RETURNING id
         """,

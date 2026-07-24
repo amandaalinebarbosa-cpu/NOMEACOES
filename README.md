@@ -1,53 +1,66 @@
 # Nomeações SIGEO
 
-Base de dados e coletor da consulta pública de nomeações da Justiça do Trabalho
-(SIGEO): <https://aj.sigeo.jt.jus.br/aj2/internetaberto/consultapublicanomeacoes.jsf>.
+Coletor e banco de dados PostgreSQL para a consulta pública de nomeações
+da Justiça do Trabalho (SIGEO/AJ-JT):
+<https://aj.sigeo.jt.jus.br/aj2/internetaberto/consultapublicanomeacoes.jsf>.
 
-Permite armazenar em PostgreSQL as nomeações filtradas por tribunal, período,
-nome/CPF do nomeado e tipo de função (perito, assistente técnico, leiloeiro etc.).
+## O que a página pública oferece
 
-## Como usar
+Filtros disponíveis no formulário:
+
+- **Tribunal** (TRT1 a TRT24)
+- **Período** (data inicial e final, dd/mm/aaaa)
+- **UF / Município / Unidade** (dependentes do tribunal)
+- **Situação** (CANCELADA, ACEITA, BAIXADA, SERVIÇO PRESTADO)
+
+Colunas do resultado:
+
+`Número do processo | Tribunal | Unidade | Nome do profissional | Data | Valor | Situação`
+
+> A página **não** permite filtrar por nome/CPF do profissional nem por
+> tipo de função (perito, leiloeiro etc.). Coletamos por período/tribunal
+> e, depois, filtramos por nome/CPF com o comando `buscar` no banco local.
+
+## Uso
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env   # ajuste DATABASE_URL
+cp .env.example .env      # ajuste DATABASE_URL
 
 # cria as tabelas
 python -m src.cli init-db
 
-# coleta com filtros
-python -m src.cli coletar --tribunal TRT1 \
-    --data-ini 2026-01-01 --data-fim 2026-07-24 \
-    --tipo "Perito"
+# coleta por tribunal e período
+python -m src.cli coletar --tribunal TRT2 \
+    --data-ini 2026-01-01 --data-fim 2026-01-31
+
+# coleta só situações específicas
+python -m src.cli coletar --tribunal TRT2 \
+    --data-ini 2026-06-01 --data-fim 2026-06-30 \
+    --situacao ACEITA --situacao SERVICO_PRESTADO
+
+# busca local — SIGEO não filtra por nome, mas o banco sim
+python -m src.cli buscar --nome "silva" --tribunal TRT2
 ```
 
 ## Estrutura
 
-- `schema.sql` — schema PostgreSQL (`tribunal`, `orgao_julgador`, `nomeado`,
-  `nomeacao`, `coleta_log`).
-- `src/scraper.py` — cliente HTTP para o formulário JSF/PrimeFaces do SIGEO
-  (trata `javax.faces.ViewState` e resposta parcial ajax).
-- `src/db.py` — upserts e conexão psycopg.
-- `src/cli.py` — comandos `init-db` e `coletar`.
+- `schema.sql` — `tribunal`, `unidade`, `profissional`, `nomeacao`,
+  `coleta_log`. `nomeacao.raw` guarda o JSON bruto da linha.
+- `src/scraper.py` — cliente HTTP para o formulário JSF/PrimeFaces.
+  Mantém `javax.faces.ViewState`, envia POST como `Faces-Request:
+  partial/ajax` e extrai o `<update id="form:resultadoPesquisa">` da
+  resposta parcial. Contém o mapeamento `TRIBUNAIS` (sigla → id JSF).
+- `src/db.py` — conexão psycopg + upserts.
+- `src/cli.py` — comandos `init-db`, `coletar`, `buscar`.
 
-## ⚠️ Ajuste necessário nos IDs do formulário
+## Notas operacionais
 
-O SIGEO é JSF: os campos têm ids como `formConsulta:dataInicial_input`. Como
-a página bloqueia acesso automatizado ao HTML inicial (retorna 403 sem UA de
-navegador), o mapeamento inicial em `FIELD_MAP` (`src/scraper.py`) usa nomes
-prováveis. Antes da primeira coleta real:
-
-1. Abra a página no navegador → DevTools → aba Network.
-2. Preencha o formulário e clique em **Pesquisar**.
-3. Copie os `name`/`id` reais dos inputs (aparecem no *Form Data* do POST).
-4. Ajuste `FIELD_MAP` e, se necessário, os cabeçalhos usados em
-   `SigeoClient.linhas()` / `cli.coletar()`.
-
-## Boas práticas
-
-- Respeite `REQUEST_DELAY_SECONDS` entre requisições.
-- Faça coletas incrementais por intervalos curtos de data para evitar
-  paginação pesada.
-- O campo `raw` (JSONB) preserva a linha original — útil quando a estrutura
-  da tabela mudar.
+- Respeite `REQUEST_DELAY_SECONDS` (padrão 1,5s) entre requisições.
+- Faça coletas por intervalos curtos (uma semana ou um mês) para evitar
+  timeouts e paginação pesada.
+- Paginação ainda não está implementada — o padrão do PrimeFaces é 25
+  linhas por página; se o intervalo devolver mais que isso, ajuste o
+  período ou implemente o clique nas páginas seguintes
+  (`form:resultadoPesquisa_paginator_bottom`).

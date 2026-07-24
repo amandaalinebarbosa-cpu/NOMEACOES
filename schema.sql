@@ -2,48 +2,42 @@
 -- Fonte: https://aj.sigeo.jt.jus.br/aj2/internetaberto/consultapublicanomeacoes.jsf
 
 CREATE TABLE IF NOT EXISTS tribunal (
-    id           SERIAL PRIMARY KEY,
-    sigla        TEXT UNIQUE NOT NULL,   -- ex.: TRT1, TRT2, TST
-    nome         TEXT
+    id       SERIAL PRIMARY KEY,
+    sigla    TEXT UNIQUE NOT NULL,   -- ex.: TRT1..TRT24
+    nome     TEXT
 );
 
-CREATE TABLE IF NOT EXISTS nomeado (
-    id           SERIAL PRIMARY KEY,
-    cpf          TEXT UNIQUE,            -- pode vir mascarado; guarde como veio
-    nome         TEXT NOT NULL,
-    UNIQUE (nome, cpf)
-);
-
-CREATE TABLE IF NOT EXISTS orgao_julgador (
+CREATE TABLE IF NOT EXISTS unidade (
     id           SERIAL PRIMARY KEY,
     tribunal_id  INT REFERENCES tribunal(id) ON DELETE CASCADE,
     nome         TEXT NOT NULL,
     UNIQUE (tribunal_id, nome)
 );
 
-CREATE TABLE IF NOT EXISTS nomeacao (
-    id                 BIGSERIAL PRIMARY KEY,
-    tribunal_id        INT  REFERENCES tribunal(id),
-    orgao_julgador_id  INT  REFERENCES orgao_julgador(id),
-    nomeado_id         INT  REFERENCES nomeado(id),
-    processo           TEXT,
-    tipo_funcao        TEXT,             -- perito, assistente técnico, leiloeiro, etc.
-    especialidade      TEXT,
-    data_nomeacao      DATE,
-    situacao           TEXT,
-    valor              NUMERIC(14,2),
-    magistrado         TEXT,
-    fonte_url          TEXT,
-    raw                JSONB,             -- payload bruto da linha (para auditoria)
-    coletado_em        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (tribunal_id, processo, nomeado_id, data_nomeacao, tipo_funcao)
+CREATE TABLE IF NOT EXISTS profissional (
+    id     SERIAL PRIMARY KEY,
+    nome   TEXT UNIQUE NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_nomeacao_data     ON nomeacao (data_nomeacao);
-CREATE INDEX IF NOT EXISTS idx_nomeacao_tribunal ON nomeacao (tribunal_id);
-CREATE INDEX IF NOT EXISTS idx_nomeacao_tipo     ON nomeacao (tipo_funcao);
-CREATE INDEX IF NOT EXISTS idx_nomeado_nome_trgm ON nomeado USING gin (nome gin_trgm_ops);
--- (o índice trgm exige: CREATE EXTENSION IF NOT EXISTS pg_trgm;)
+CREATE TABLE IF NOT EXISTS nomeacao (
+    id               BIGSERIAL PRIMARY KEY,
+    processo         TEXT,
+    tribunal_id      INT REFERENCES tribunal(id),
+    unidade_id       INT REFERENCES unidade(id),
+    profissional_id  INT REFERENCES profissional(id),
+    data_nomeacao    DATE,
+    valor            NUMERIC(14,2),
+    situacao         TEXT,          -- ACEITA | BAIXADA | CANCELADA | SERVIÇO PRESTADO
+    fonte_url        TEXT,
+    raw              JSONB,
+    coletado_em      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (processo, profissional_id, data_nomeacao, situacao)
+);
+
+CREATE INDEX IF NOT EXISTS idx_nomeacao_data      ON nomeacao (data_nomeacao);
+CREATE INDEX IF NOT EXISTS idx_nomeacao_tribunal  ON nomeacao (tribunal_id);
+CREATE INDEX IF NOT EXISTS idx_nomeacao_situacao  ON nomeacao (situacao);
+CREATE INDEX IF NOT EXISTS idx_profissional_nome  ON profissional (lower(nome));
 
 CREATE TABLE IF NOT EXISTS coleta_log (
     id             BIGSERIAL PRIMARY KEY,
