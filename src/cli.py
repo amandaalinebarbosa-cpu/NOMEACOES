@@ -282,5 +282,87 @@ def import_peritos(tsv_path):
     click.echo(f"Linhas: {total} | profissionais novos: {novos_prof} | qualificações novas: {novas_qual}")
 
 
+@cli.command("stats")
+def stats():
+    """Resumo: totais por tribunal, situação, top profissionais e por mês."""
+    with db.connect() as conn, conn.cursor() as cur:
+        cur.execute("SELECT COUNT(*), COUNT(DISTINCT profissional_id) FROM nomeacao")
+        total, pessoas = cur.fetchone()
+        click.echo(f"\n== Totais ==")
+        click.echo(f"Nomeações: {total}   Profissionais distintos: {pessoas}\n")
+
+        click.echo("== Por tribunal ==")
+        cur.execute("""
+            SELECT t.sigla, COUNT(*) FROM nomeacao n
+              JOIN tribunal t ON t.id = n.tribunal_id
+             GROUP BY t.sigla ORDER BY 2 DESC
+        """)
+        for sigla, n in cur.fetchall():
+            click.echo(f"  {sigla:6s} {n:>8}")
+
+        click.echo("\n== Por situação ==")
+        cur.execute("SELECT situacao, COUNT(*) FROM nomeacao GROUP BY 1 ORDER BY 2 DESC")
+        for s, n in cur.fetchall():
+            click.echo(f"  {s:20s} {n:>8}")
+
+        click.echo("\n== Top 15 profissionais (por nº de nomeações) ==")
+        cur.execute("""
+            SELECT p.nome, p.profissao, COUNT(*) FROM nomeacao n
+              JOIN profissional p ON p.id = n.profissional_id
+             GROUP BY p.nome, p.profissao ORDER BY 3 DESC LIMIT 15
+        """)
+        for nome, prof, n in cur.fetchall():
+            click.echo(f"  {n:>5}  {nome[:45]:45s} {prof or ''}")
+
+        click.echo("\n== Por mês (últimos 12) ==")
+        cur.execute("""
+            SELECT to_char(data_nomeacao, 'YYYY-MM'), COUNT(*) FROM nomeacao
+             WHERE data_nomeacao IS NOT NULL
+             GROUP BY 1 ORDER BY 1 DESC LIMIT 12
+        """)
+        for mes, n in cur.fetchall():
+            click.echo(f"  {mes}  {n:>8}")
+
+
+@cli.command("exportar")
+@click.argument("saida", type=click.Path(dir_okay=False))
+@click.option("--tribunal", help="Filtra por sigla, ex.: TRT2")
+@click.option("--data-ini", help="AAAA-MM-DD")
+@click.option("--data-fim", help="AAAA-MM-DD")
+@click.option("--nome", help="Trecho do nome do profissional")
+@click.option("--profissao", help="Trecho da profissão")
+def exportar(saida, tribunal, data_ini, data_fim, nome, profissao):
+    """Exporta as nomeações filtradas para um CSV (abre no Excel)."""
+    import csv as _csv
+    clauses, params = [], []
+    if tribunal:  clauses.append("t.sigla = %s"); params.append(tribunal)
+    if data_ini:  clauses.append("n.data_nomeacao >= %s"); params.append(_d(data_ini))
+    if data_fim:  clauses.append("n.data_nomeacao <= %s"); params.append(_d(data_fim))
+    if nome:      clauses.append("lower(p.nome) LIKE %s"); params.append(f"%{nome.lower()}%")
+    if profissao: clauses.append("lower(p.profissao) LIKE %s"); params.append(f"%{profissao.lower()}%")
+    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+    sql = f"""
+        SELECT n.data_nomeacao, t.sigla, u.nome, p.nome, p.profissao,
+               n.processo, n.valor, n.situacao
+          FROM nomeacao n
+          JOIN tribunal t     ON t.id = n.tribunal_id
+          JOIN unidade u      ON u.id = n.unidade_id
+          JOIN profissional p ON p.id = n.profissional_id
+          {where}
+         ORDER BY n.data_nomeacao DESC
+    """
+    with db.connect() as conn, conn.cursor() as cur, \
+         open(saida, "w", newline="", encoding="utf-8-sig") as fh:
+        cur.execute(sql, params)
+        w = _csv.writer(fh, delimiter=";")
+        w.writerow(["Data", "Tribunal", "Unidade", "Nome", "Profissão",
+                    "Processo", "Valor", "Situação"])
+        n = 0
+        for row in cur:
+            w.writerow(row)
+            n += 1
+    click.echo(f"Exportadas {n} linhas para {saida}")
+
+
 if __name__ == "__main__":
     cli()
