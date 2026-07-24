@@ -368,6 +368,57 @@ def exportar(saida, tribunal, data_ini, data_fim, nome, profissao):
     click.echo(f"Exportadas {n} linhas para {saida}")
 
 
+@cli.command("sincronizar-peritos")
+@click.option("--tribunal", "tribunais", multiple=True,
+              type=click.Choice(sorted(TRIBUNAIS)),
+              help="Restringe a tribunais (padrão: todos os 24)")
+@click.option("--rows", default=100, type=int,
+              help="Linhas por página no SIGEO (10/20/50/100)")
+def sincronizar_peritos(tribunais, rows):
+    """Baixa o cadastro completo de profissionais do SIGEO (todos os TRTs)."""
+    from .peritos_scraper import SigeoPeritosClient
+    trts = list(tribunais) if tribunais else sorted(TRIBUNAIS)
+    total_novos_prof = total_novas_qual = total_linhas = 0
+    with db.connect() as conn, conn.cursor() as cur:
+        for trt in trts:
+            click.echo(f"\n[{trt}] carregando...")
+            c = SigeoPeritosClient()
+            c.carregar()
+            soup = c.selecionar_tribunal(trt)
+            total = c.total_registros(soup) or 0
+            click.echo(f"[{trt}] {total} profissionais no cadastro")
+            first = 0
+            while True:
+                for r in c.linhas(soup):
+                    total_linhas += 1
+                    cur.execute("""
+                        INSERT INTO profissional (nome, profissao) VALUES (%s, %s)
+                        ON CONFLICT (nome) DO UPDATE SET profissao =
+                            COALESCE(profissional.profissao, EXCLUDED.profissao)
+                        RETURNING id, (xmax = 0)
+                    """, (r["nome"], r["profissao"]))
+                    pid, inserted = cur.fetchone()
+                    if inserted:
+                        total_novos_prof += 1
+                    cur.execute("""
+                        INSERT INTO qualificacao (profissional_id, categoria,
+                                                   profissao, especialidade)
+                        VALUES (%s, %s, %s, %s)
+                        ON CONFLICT (profissional_id, categoria, profissao,
+                                     (COALESCE(especialidade, ''))) DO NOTHING
+                        RETURNING id
+                    """, (pid, r["categoria"], r["profissao"], r["especialidade"]))
+                    if cur.fetchone():
+                        total_novas_qual += 1
+                conn.commit()
+                first += rows
+                if first >= total:
+                    break
+                click.echo(f"[{trt}] paginando {first}/{total}")
+                soup = c.paginar(first, rows)
+    click.echo(f"\nTotal linhas: {total_linhas}  |  profissionais novos: {total_novos_prof}  |  qualificações novas: {total_novas_qual}")
+
+
 @cli.command("web")
 @click.option("--host", default="127.0.0.1")
 @click.option("--port", default=5001, type=int)
