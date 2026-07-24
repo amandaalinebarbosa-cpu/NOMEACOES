@@ -54,12 +54,15 @@ def coletar(tribunal, data_ini, data_fim, situacoes):
 def _coletar_intervalo(tribunal: str, data_ini: date, data_fim: date,
                        situacoes: list[str]) -> tuple[int, int]:
     """Coleta um intervalo, paginando todos os resultados."""
+    click.echo(f"[{tribunal}] {data_ini}..{data_fim}: carregando formulário SIGEO...")
     client = SigeoClient()
     client.carregar()
     f = Filtros(tribunal=tribunal, data_ini=data_ini, data_fim=data_fim,
                 situacoes=situacoes)
+    click.echo(f"[{tribunal}] enviando filtro...")
     soup = client.pesquisar(f)
     total_disponivel = client.total_registros(soup) or 0
+    click.echo(f"[{tribunal}] SIGEO devolveu {total_disponivel} registros no total")
     rows = 25
     novos = total = 0
     with db.connect() as conn, conn.cursor() as cur:
@@ -85,6 +88,7 @@ def _coletar_intervalo(tribunal: str, data_ini: date, data_fim: date,
             first += rows
             if first >= total_disponivel:
                 break
+            click.echo(f"[{tribunal}] paginando... {first}/{total_disponivel}")
             soup = client.paginar(first, rows)
         conn.commit()
     log.info("%s %s..%s -> total=%d novas=%d",
