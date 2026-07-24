@@ -1,8 +1,9 @@
 """CLI: inicializar o banco, coletar nomeações e buscar por profissional."""
 from __future__ import annotations
 
+import calendar
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import click
 
@@ -41,40 +42,113 @@ def init_db():
               type=click.Choice(list(SITUACOES)),
               help="Uma ou mais situações (padrão: todas)")
 def coletar(tribunal, data_ini, data_fim, situacoes):
-    """Coleta nomeações do SIGEO e grava no banco."""
-    f = Filtros(
-        tribunal=tribunal,
-        data_ini=_d(data_ini),
-        data_fim=_d(data_fim),
-        situacoes=[SITUACOES[s] for s in situacoes] if situacoes
-                  else list(SITUACOES.values()),
+    """Coleta nomeações do SIGEO e grava no banco (com paginação)."""
+    total, novos = _coletar_intervalo(
+        tribunal, _d(data_ini), _d(data_fim),
+        [SITUACOES[s] for s in situacoes] if situacoes
+                    else list(SITUACOES.values()),
     )
+    click.echo(f"Linhas: {total} | novas: {novos}")
+
+
+def _coletar_intervalo(tribunal: str, data_ini: date, data_fim: date,
+                       situacoes: list[str]) -> tuple[int, int]:
+    """Coleta um intervalo, paginando todos os resultados."""
     client = SigeoClient()
     client.carregar()
+    f = Filtros(tribunal=tribunal, data_ini=data_ini, data_fim=data_fim,
+                situacoes=situacoes)
     soup = client.pesquisar(f)
-
+    total_disponivel = client.total_registros(soup) or 0
+    rows = 25
     novos = total = 0
     with db.connect() as conn, conn.cursor() as cur:
         trib_id = db.upsert_tribunal(cur, tribunal)
-        for r in client.linhas(soup, tribunal_sigla=tribunal):
-            total += 1
-            uni_id = db.upsert_unidade(cur, trib_id, r["unidade"] or "N/D")
-            prof_id = db.upsert_profissional(cur, r["nome"] or "N/D")
-            payload = {
-                "processo":        r["processo"],
-                "tribunal_id":     trib_id,
-                "unidade_id":      uni_id,
-                "profissional_id": prof_id,
-                "data_nomeacao":   parse_data(r["data"]),
-                "valor":           parse_valor(r["valor"]),
-                "situacao":        r["situacao"],
-                "fonte_url":       client.url,
-                "raw":             r,
-            }
-            if db.insert_nomeacao(cur, payload):
-                novos += 1
+        first = 0
+        while True:
+            for r in client.linhas(soup, tribunal_sigla=tribunal):
+                total += 1
+                uni_id = db.upsert_unidade(cur, trib_id, r["unidade"] or "N/D")
+                prof_id = db.upsert_profissional(cur, r["nome"] or "N/D")
+                if db.insert_nomeacao(cur, {
+                    "processo":        r["processo"],
+                    "tribunal_id":     trib_id,
+                    "unidade_id":      uni_id,
+                    "profissional_id": prof_id,
+                    "data_nomeacao":   parse_data(r["data"]),
+                    "valor":           parse_valor(r["valor"]),
+                    "situacao":        r["situacao"],
+                    "fonte_url":       client.url,
+                    "raw":             r,
+                }):
+                    novos += 1
+            first += rows
+            if first >= total_disponivel:
+                break
+            soup = client.paginar(first, rows)
         conn.commit()
-    click.echo(f"Linhas: {total} | novas: {novos}")
+    log.info("%s %s..%s -> total=%d novas=%d",
+             tribunal, data_ini, data_fim, total, novos)
+    return total, novos
+
+
+def _meses(ini: date, fim: date):
+    """Itera pares (primeiro_dia, ultimo_dia) de cada mês em [ini, fim]."""
+    y, m = ini.year, ini.month
+    while (y, m) <= (fim.year, fim.month):
+        first = date(y, m, 1)
+        last = date(y, m, calendar.monthrange(y, m)[1])
+        yield max(first, ini), min(last, fim)
+        m += 1
+        if m == 13:
+            m, y = 1, y + 1
+
+
+@cli.command("backfill")
+@click.option("--data-ini", default="2015-01-01", show_default=True,
+              help="Data inicial da varredura histórica (AAAA-MM-DD)")
+@click.option("--data-fim", default=None,
+              help="Data final (padrão: ontem)")
+@click.option("--tribunal", "tribunais", multiple=True,
+              type=click.Choice(sorted(TRIBUNAIS)),
+              help="Restringe a tribunais específicos (padrão: todos)")
+def backfill(data_ini, data_fim, tribunais):
+    """Baixa toda a base disponível, varrendo mês a mês por tribunal."""
+    ini = _d(data_ini)
+    fim = _d(data_fim) or (date.today() - timedelta(days=1))
+    trts = list(tribunais) if tribunais else sorted(TRIBUNAIS)
+    grand_total = grand_novos = 0
+    for trt in trts:
+        for a, b in _meses(ini, fim):
+            try:
+                t, n = _coletar_intervalo(trt, a, b, list(SITUACOES.values()))
+                grand_total += t
+                grand_novos += n
+            except Exception as e:
+                log.exception("Falha em %s %s..%s: %s", trt, a, b, e)
+    click.echo(f"Backfill concluído. Linhas: {grand_total} | novas: {grand_novos}")
+
+
+@cli.command("coletar-mes-anterior")
+@click.option("--tribunal", "tribunais", multiple=True,
+              type=click.Choice(sorted(TRIBUNAIS)),
+              help="Restringe a tribunais (padrão: todos)")
+def coletar_mes_anterior(tribunais):
+    """Coleta o mês imediatamente anterior à data de hoje (para cron mensal)."""
+    hoje = date.today()
+    primeiro_mes_atual = hoje.replace(day=1)
+    fim = primeiro_mes_atual - timedelta(days=1)
+    ini = fim.replace(day=1)
+    trts = list(tribunais) if tribunais else sorted(TRIBUNAIS)
+    grand_total = grand_novos = 0
+    for trt in trts:
+        try:
+            t, n = _coletar_intervalo(trt, ini, fim, list(SITUACOES.values()))
+            grand_total += t
+            grand_novos += n
+        except Exception as e:
+            log.exception("Falha em %s: %s", trt, e)
+    click.echo(f"Mês {ini:%Y-%m}: linhas {grand_total} | novas {grand_novos}")
 
 
 @cli.command("buscar")

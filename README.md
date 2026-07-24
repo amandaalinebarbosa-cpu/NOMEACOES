@@ -31,9 +31,15 @@ cp .env.example .env      # ajuste DATABASE_URL
 # cria as tabelas
 python -m src.cli init-db
 
-# coleta por tribunal e período
+# coleta por tribunal e período (com paginação)
 python -m src.cli coletar --tribunal TRT2 \
     --data-ini 2026-01-01 --data-fim 2026-01-31
+
+# baixa toda a base disponível, mês a mês, para todos os TRTs
+python -m src.cli backfill --data-ini 2015-01-01
+
+# coleta apenas o mês anterior (para rodar dia 1º de cada mês)
+python -m src.cli coletar-mes-anterior
 
 # coleta só situações específicas
 python -m src.cli coletar --tribunal TRT2 \
@@ -71,6 +77,20 @@ SIGEO devolve na nomeação.
   resposta parcial. Contém o mapeamento `TRIBUNAIS` (sigla → id JSF).
 - `src/db.py` — conexão psycopg + upserts.
 - `src/cli.py` — comandos `init-db`, `coletar`, `buscar`.
+
+## Agendamento mensal
+
+`.github/workflows/coleta-mensal.yml` roda `coletar-mes-anterior` todo dia 1º
+às 05:00 UTC (02:00 BRT). Requer o secret `DATABASE_URL` configurado no
+repositório (Settings → Secrets and variables → Actions). O mesmo workflow
+pode ser disparado manualmente em `Actions → Coleta mensal SIGEO → Run
+workflow` com modo `backfill` para o carregamento histórico inicial.
+
+Se preferir rodar em servidor próprio, use cron:
+
+```cron
+0 3 1 * *  cd /caminho/NOMEACOES && /caminho/.venv/bin/python -m src.cli coletar-mes-anterior >> logs/coleta.log 2>&1
+```
 
 ## Notas operacionais
 

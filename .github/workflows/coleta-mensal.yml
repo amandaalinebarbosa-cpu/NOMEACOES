@@ -1,0 +1,42 @@
+name: Coleta mensal SIGEO
+
+on:
+  schedule:
+    # Todo dia 01, 05:00 UTC (02:00 BRT). GitHub cron usa UTC.
+    - cron: "0 5 1 * *"
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "coletar-mes-anterior | backfill"
+        default: coletar-mes-anterior
+        type: choice
+        options: [coletar-mes-anterior, backfill]
+      data_ini:
+        description: "Backfill: data inicial AAAA-MM-DD"
+        default: "2015-01-01"
+
+jobs:
+  coletar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      REQUEST_DELAY_SECONDS: "2"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: init-db (idempotente)
+        run: python -m src.cli init-db
+      - name: Coleta
+        run: |
+          set -e
+          MODO="${{ github.event.inputs.modo || 'coletar-mes-anterior' }}"
+          if [ "$MODO" = "backfill" ]; then
+            python -m src.cli backfill --data-ini "${{ github.event.inputs.data_ini }}"
+          else
+            python -m src.cli coletar-mes-anterior
+          fi

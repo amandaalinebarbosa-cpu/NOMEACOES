@@ -161,15 +161,44 @@ class SigeoClient:
         time.sleep(self.delay)
         r = self._post(self.url, data, ajax=True)
         self._extract_view_state(r.text)
+        return self._parse_update(r.text)
 
-        # A resposta é XML de partial-update; extraímos o CDATA do
-        # form:resultadoPesquisa e parseamos como HTML.
+    def paginar(self, first: int, rows: int = 25) -> BeautifulSoup:
+        """Solicita a próxima página do PrimeFaces DataTable."""
+        vs = self._vs()
+        data: list[tuple[str, str]] = [
+            ("javax.faces.partial.ajax", "true"),
+            ("javax.faces.source", "form:resultadoPesquisa"),
+            ("javax.faces.partial.execute", "form:resultadoPesquisa"),
+            ("javax.faces.partial.render", "form:resultadoPesquisa"),
+            ("form:resultadoPesquisa", "form:resultadoPesquisa"),
+            ("form:resultadoPesquisa_pagination", "true"),
+            ("form:resultadoPesquisa_first", str(first)),
+            ("form:resultadoPesquisa_rows", str(rows)),
+            ("form:resultadoPesquisa_encodeFeature", "true"),
+            ("form", "form"),
+            ("javax.faces.ViewState", vs),
+        ]
+        time.sleep(self.delay)
+        r = self._post(self.url, data, ajax=True)
+        self._extract_view_state(r.text)
+        return self._parse_update(r.text)
+
+    def _parse_update(self, text: str) -> BeautifulSoup:
         m = re.search(
-            r'<update id="form:resultadoPesquisa">\s*<!\[CDATA\[(.*?)\]\]>\s*</update>',
-            r.text, flags=re.DOTALL,
+            r'<update id="form:resultadoPesquisa[^"]*">\s*<!\[CDATA\[(.*?)\]\]>\s*</update>',
+            text, flags=re.DOTALL,
         )
-        html = m.group(1) if m else r.text
-        return BeautifulSoup(html, "lxml")
+        return BeautifulSoup(m.group(1) if m else text, "lxml")
+
+    @staticmethod
+    def total_registros(soup: BeautifulSoup) -> int | None:
+        """Lê '0-25 de 137' do paginador para saber quantas linhas existem."""
+        el = soup.find(class_="ui-paginator-current")
+        if not el:
+            return None
+        m = re.search(r"de\s+(\d+)", el.get_text())
+        return int(m.group(1)) if m else None
 
     @staticmethod
     def linhas(soup: BeautifulSoup, tribunal_sigla: str | None = None) -> Iterator[dict]:
