@@ -387,6 +387,10 @@ def sincronizar_peritos(tribunais, rows):
             soup = c.selecionar_tribunal(trt)
             total = c.total_registros(soup) or 0
             click.echo(f"[{trt}] {total} profissionais no cadastro")
+            # A resposta inicial vem com 20 linhas (padrão do combo); pedimos
+            # já uma primeira paginação com `rows` para não perder linhas.
+            if total > 0:
+                soup = c.paginar(0, rows)
             first = 0
             while True:
                 for r in c.linhas(soup):
