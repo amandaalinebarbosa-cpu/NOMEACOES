@@ -79,22 +79,25 @@ def coletar(tribunal, data_ini, data_fim, situacoes):
 
 @cli.command("buscar")
 @click.option("--nome", help="Trecho do nome do profissional (case-insensitive)")
+@click.option("--profissao", help="Trecho da profissão (case-insensitive)")
 @click.option("--tribunal", help="Sigla do tribunal")
 @click.option("--situacao", help="ex.: ACEITA")
 @click.option("--limite", type=int, default=50)
-def buscar(nome, tribunal, situacao, limite):
+def buscar(nome, profissao, tribunal, situacao, limite):
     """Consulta local, útil já que o SIGEO não filtra por nome."""
     clauses, params = [], []
     if nome:
         clauses.append("lower(p.nome) LIKE %s"); params.append(f"%{nome.lower()}%")
+    if profissao:
+        clauses.append("lower(p.profissao) LIKE %s"); params.append(f"%{profissao.lower()}%")
     if tribunal:
         clauses.append("t.sigla = %s"); params.append(tribunal)
     if situacao:
         clauses.append("n.situacao ILIKE %s"); params.append(situacao)
     where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
     sql = f"""
-        SELECT n.data_nomeacao, t.sigla, u.nome AS unidade, p.nome,
-               n.processo, n.valor, n.situacao
+        SELECT n.data_nomeacao, t.sigla, u.nome AS unidade,
+               p.nome, p.profissao, n.processo, n.valor, n.situacao
           FROM nomeacao n
           JOIN tribunal t ON t.id = n.tribunal_id
           JOIN unidade u  ON u.id = n.unidade_id
@@ -108,6 +111,100 @@ def buscar(nome, tribunal, situacao, limite):
         cur.execute(sql, params)
         for row in cur.fetchall():
             click.echo(" | ".join("" if v is None else str(v) for v in row))
+
+
+@cli.command("set-profissao")
+@click.option("--nome", required=True, help="Nome exato ou trecho (LIKE) do profissional")
+@click.option("--profissao", required=True, help="Profissão a atribuir")
+@click.option("--exato/--like", default=False, help="Casamento exato do nome (padrão: LIKE)")
+def set_profissao(nome, profissao, exato):
+    """Preenche/atualiza a profissão de um ou vários profissionais."""
+    with db.connect() as conn, conn.cursor() as cur:
+        if exato:
+            cur.execute(
+                "UPDATE profissional SET profissao = %s WHERE nome = %s",
+                (profissao, nome),
+            )
+        else:
+            cur.execute(
+                "UPDATE profissional SET profissao = %s WHERE lower(nome) LIKE %s",
+                (profissao, f"%{nome.lower()}%"),
+            )
+        conn.commit()
+        click.echo(f"Atualizados: {cur.rowcount}")
+
+
+@cli.command("import-profissoes")
+@click.argument("csv_path", type=click.Path(exists=True, dir_okay=False))
+def import_profissoes(csv_path):
+    """Importa profissões de um CSV com cabeçalho 'nome,profissao'."""
+    import csv
+    ok = 0
+    with open(csv_path, newline="", encoding="utf-8") as fh, \
+         db.connect() as conn, conn.cursor() as cur:
+        for r in csv.DictReader(fh):
+            cur.execute(
+                """
+                INSERT INTO profissional (nome, profissao) VALUES (%s, %s)
+                ON CONFLICT (nome) DO UPDATE SET profissao = EXCLUDED.profissao
+                """,
+                (r["nome"].strip(), (r.get("profissao") or "").strip() or None),
+            )
+            ok += 1
+        conn.commit()
+    click.echo(f"Linhas processadas: {ok}")
+
+
+@cli.command("import-peritos")
+@click.argument("tsv_path", type=click.Path(exists=True, dir_okay=False))
+def import_peritos(tsv_path):
+    """Importa o cadastro CNPTJ (TSV: Nome<TAB>Categoria<TAB>Profissão<TAB>Especialidade).
+
+    Aceita cabeçalho na primeira linha (é ignorado se começar com 'Nome').
+    Uma pessoa pode ter várias linhas — cada uma vira uma qualificação.
+    """
+    novos_prof = novas_qual = total = 0
+    with open(tsv_path, encoding="utf-8") as fh, \
+         db.connect() as conn, conn.cursor() as cur:
+        for i, line in enumerate(fh):
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 3:
+                continue
+            if i == 0 and parts[0].strip().lower() == "nome":
+                continue
+            nome = parts[0].strip()
+            categoria = parts[1].strip()
+            profissao = parts[2].strip()
+            especialidade = (parts[3].strip() if len(parts) > 3 else "") or None
+            if not (nome and categoria and profissao):
+                continue
+            total += 1
+            cur.execute(
+                """
+                INSERT INTO profissional (nome, profissao) VALUES (%s, %s)
+                ON CONFLICT (nome) DO UPDATE SET profissao =
+                    COALESCE(profissional.profissao, EXCLUDED.profissao)
+                RETURNING id, (xmax = 0) AS inserted
+                """,
+                (nome, profissao),
+            )
+            pid, inserted = cur.fetchone()
+            if inserted:
+                novos_prof += 1
+            cur.execute(
+                """
+                INSERT INTO qualificacao
+                    (profissional_id, categoria, profissao, especialidade)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT DO NOTHING
+                RETURNING id
+                """,
+                (pid, categoria, profissao, especialidade),
+            )
+            if cur.fetchone():
+                novas_qual += 1
+        conn.commit()
+    click.echo(f"Linhas: {total} | profissionais novos: {novos_prof} | qualificações novas: {novas_qual}")
 
 
 if __name__ == "__main__":

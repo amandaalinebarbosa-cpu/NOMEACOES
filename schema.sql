@@ -15,9 +15,26 @@ CREATE TABLE IF NOT EXISTS unidade (
 );
 
 CREATE TABLE IF NOT EXISTS profissional (
-    id     SERIAL PRIMARY KEY,
-    nome   TEXT UNIQUE NOT NULL
+    id         SERIAL PRIMARY KEY,
+    nome       TEXT UNIQUE NOT NULL,
+    profissao  TEXT   -- resumo (primeira profissão importada); ver qualificacao
 );
+
+ALTER TABLE profissional ADD COLUMN IF NOT EXISTS profissao TEXT;
+CREATE INDEX IF NOT EXISTS idx_profissional_profissao ON profissional (lower(profissao));
+
+-- Uma pessoa pode ter várias qualificações no cadastro do CNPTJ:
+-- (categoria = PERITO/TRADUTOR/INTÉRPRETE, profissao, especialidade).
+CREATE TABLE IF NOT EXISTS qualificacao (
+    id               SERIAL PRIMARY KEY,
+    profissional_id  INT REFERENCES profissional(id) ON DELETE CASCADE,
+    categoria        TEXT NOT NULL,
+    profissao        TEXT NOT NULL,
+    especialidade    TEXT,
+    UNIQUE (profissional_id, categoria, profissao, COALESCE(especialidade, ''))
+);
+CREATE INDEX IF NOT EXISTS idx_qualificacao_prof   ON qualificacao (lower(profissao));
+CREATE INDEX IF NOT EXISTS idx_qualificacao_espec  ON qualificacao (lower(especialidade));
 
 CREATE TABLE IF NOT EXISTS nomeacao (
     id               BIGSERIAL PRIMARY KEY,

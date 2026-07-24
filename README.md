@@ -42,7 +42,24 @@ python -m src.cli coletar --tribunal TRT2 \
 
 # busca local — SIGEO não filtra por nome, mas o banco sim
 python -m src.cli buscar --nome "silva" --tribunal TRT2
+python -m src.cli buscar --profissao "perito medico"
+
+# a profissão não vem do SIGEO — preencha manualmente ou por CSV
+python -m src.cli set-profissao --nome "JOSE DA SILVA" --profissao "Perito Médico" --exato
+python -m src.cli import-profissoes profissoes.csv   # cabeçalho: nome,profissao
+
+# importa cadastro CNPTJ (TSV: Nome\tCategoria\tProfissão\tEspecialidade)
+python -m src.cli import-peritos data/peritos.tsv
 ```
+
+## Cadastro nacional (CNPTJ)
+
+Salve o cadastro colado (Nome | Categoria | Profissão | Especialidade) em
+`data/peritos.tsv` (separado por TAB, primeira linha pode ser o cabeçalho).
+O comando `import-peritos` cria/atualiza `profissional` e insere uma linha
+em `qualificacao` para cada combinação categoria/profissão/especialidade.
+Isso permite consultar por profissão e especialidade sem depender do que o
+SIGEO devolve na nomeação.
 
 ## Estrutura
 
