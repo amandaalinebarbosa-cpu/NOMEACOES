@@ -206,14 +206,16 @@ class SigeoClient:
 
         Colunas (index): 0 processo | 1 tribunal | 2 unidade |
                          3 nome | 4 data | 5 valor | 6 situação
+
+        Aceita 3 formatos: tbody wrapping, HTML completo ou apenas <tr>s
+        soltos (é isso que a resposta de paginação do PrimeFaces devolve).
         """
         tbody = soup.find(id="form:resultadoPesquisa_data") or soup.find("tbody")
-        if not tbody:
-            return
-        for tr in tbody.find_all("tr"):
+        trs = tbody.find_all("tr") if tbody else soup.find_all("tr")
+        for tr in trs:
             tds = tr.find_all("td")
             if len(tds) < 7:
-                continue  # linha "Nenhum registro" tem colspan
+                continue
             cells = [td.get_text(" ", strip=True) for td in tds]
             yield {
                 "processo":  cells[0],

@@ -133,9 +133,8 @@ class SigeoPeritosClient:
     @staticmethod
     def linhas(soup: BeautifulSoup) -> Iterator[dict]:
         tbody = soup.find(id="form:resultadoPesquisa_data") or soup.find("tbody")
-        if not tbody:
-            return
-        for tr in tbody.find_all("tr"):
+        trs = tbody.find_all("tr") if tbody else soup.find_all("tr")
+        for tr in trs:
             tds = tr.find_all("td")
             if len(tds) < 4:
                 continue
