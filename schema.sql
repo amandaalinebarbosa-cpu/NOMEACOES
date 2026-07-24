@@ -30,9 +30,10 @@ CREATE TABLE IF NOT EXISTS qualificacao (
     profissional_id  INT REFERENCES profissional(id) ON DELETE CASCADE,
     categoria        TEXT NOT NULL,
     profissao        TEXT NOT NULL,
-    especialidade    TEXT,
-    UNIQUE (profissional_id, categoria, profissao, COALESCE(especialidade, ''))
+    especialidade    TEXT
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uq_qualificacao ON qualificacao
+    (profissional_id, categoria, profissao, COALESCE(especialidade, ''));
 CREATE INDEX IF NOT EXISTS idx_qualificacao_prof   ON qualificacao (lower(profissao));
 CREATE INDEX IF NOT EXISTS idx_qualificacao_espec  ON qualificacao (lower(especialidade));
 

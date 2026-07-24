@@ -270,7 +270,8 @@ def import_peritos(tsv_path):
                 INSERT INTO qualificacao
                     (profissional_id, categoria, profissao, especialidade)
                 VALUES (%s, %s, %s, %s)
-                ON CONFLICT DO NOTHING
+                ON CONFLICT (profissional_id, categoria, profissao,
+                             (COALESCE(especialidade, ''))) DO NOTHING
                 RETURNING id
                 """,
                 (pid, categoria, profissao, especialidade),
