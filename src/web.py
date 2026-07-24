@@ -32,7 +32,10 @@ TPL = """
 </style>
 </head><body>
 <div class="container-fluid">
-  <h1 class="mb-3">Nomeações SIGEO — Justiça do Trabalho</h1>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Nomeações SIGEO — Justiça do Trabalho</h1>
+    <a href="/dashboard" class="btn btn-primary">📊 Ver Dashboards</a>
+  </div>
 
   <div class="stats">
     <div class="stat-card"><div class="stat-num">{{ "{:,}".format(total_geral).replace(",", ".") }}</div><div>total no banco</div></div>
@@ -231,6 +234,145 @@ def export():
         mimetype="text/csv",
         headers={"Content-Disposition":
                  f"attachment; filename=nomeacoes_{date.today():%Y%m%d}.csv"},
+    )
+
+
+DASH_TPL = """
+<!doctype html>
+<html lang="pt-br"><head>
+<meta charset="utf-8"><title>Dashboards — Nomeações SIGEO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  body { padding: 20px; background: #f5f7fb; }
+  .kpi { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .kpi .num { font-size: 2rem; font-weight: 700; color: #0d6efd; }
+  .kpi .lbl { color: #6c757d; font-size: 0.85rem; text-transform: uppercase; letter-spacing: .5px; }
+  .card-chart { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); height: 100%; }
+  .card-chart h5 { margin-bottom: 15px; color: #333; }
+  canvas { max-height: 350px; }
+</style>
+</head><body>
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>📊 Dashboards</h1>
+    <div><a href="/" class="btn btn-outline-primary">← Voltar à tabela</a></div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="kpi"><div class="lbl">Nomeações</div><div class="num">{{ "{:,}".format(kpis.total).replace(",",".") }}</div></div></div>
+    <div class="col-md-3"><div class="kpi"><div class="lbl">Profissionais</div><div class="num">{{ "{:,}".format(kpis.pessoas).replace(",",".") }}</div></div></div>
+    <div class="col-md-3"><div class="kpi"><div class="lbl">Tribunais</div><div class="num">{{ kpis.tribunais }}</div></div></div>
+    <div class="col-md-3"><div class="kpi"><div class="lbl">Valor total</div><div class="num">R$ {{ "{:,.0f}".format(kpis.valor or 0).replace(",","X").replace(".",",").replace("X",".") }}</div></div></div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-8"><div class="card-chart"><h5>Nomeações por mês</h5><canvas id="chartMes"></canvas></div></div>
+    <div class="col-lg-4"><div class="card-chart"><h5>Por situação</h5><canvas id="chartSit"></canvas></div></div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-6"><div class="card-chart"><h5>Por tribunal</h5><canvas id="chartTrib"></canvas></div></div>
+    <div class="col-lg-6"><div class="card-chart"><h5>Top 10 profissões</h5><canvas id="chartProf"></canvas></div></div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12"><div class="card-chart"><h5>Top 15 profissionais mais nomeados</h5><canvas id="chartTop"></canvas></div></div>
+  </div>
+</div>
+
+<script>
+const cores = ['#0d6efd','#6610f2','#6f42c1','#d63384','#dc3545','#fd7e14','#ffc107','#198754','#20c997','#0dcaf0','#6c757d','#adb5bd','#495057','#212529','#e83e8c'];
+
+new Chart(document.getElementById('chartMes'), {
+  type: 'line', data: {
+    labels: {{ mes_labels|tojson }},
+    datasets: [{ label: 'Nomeações', data: {{ mes_vals|tojson }},
+      borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,.15)', fill: true, tension: .3 }]
+  }, options: { responsive: true, plugins: { legend: { display: false } } }
+});
+
+new Chart(document.getElementById('chartSit'), {
+  type: 'doughnut', data: {
+    labels: {{ sit_labels|tojson }},
+    datasets: [{ data: {{ sit_vals|tojson }}, backgroundColor: cores }]
+  }, options: { responsive: true }
+});
+
+new Chart(document.getElementById('chartTrib'), {
+  type: 'bar', data: {
+    labels: {{ trib_labels|tojson }},
+    datasets: [{ label: 'Nomeações', data: {{ trib_vals|tojson }}, backgroundColor: '#0d6efd' }]
+  }, options: { responsive: true, plugins: { legend: { display: false } } }
+});
+
+new Chart(document.getElementById('chartProf'), {
+  type: 'bar', data: {
+    labels: {{ prof_labels|tojson }},
+    datasets: [{ label: 'Nomeações', data: {{ prof_vals|tojson }}, backgroundColor: '#20c997' }]
+  }, options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
+});
+
+new Chart(document.getElementById('chartTop'), {
+  type: 'bar', data: {
+    labels: {{ top_labels|tojson }},
+    datasets: [{ label: 'Nomeações', data: {{ top_vals|tojson }}, backgroundColor: '#fd7e14' }]
+  }, options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
+});
+</script>
+</body></html>
+"""
+
+
+@app.route("/dashboard")
+def dashboard():
+    with db.connect() as conn, conn.cursor() as cur:
+        cur.execute("SELECT COUNT(*), COUNT(DISTINCT profissional_id), COALESCE(SUM(valor),0) FROM nomeacao")
+        total, pessoas, valor = cur.fetchone()
+        cur.execute("SELECT COUNT(DISTINCT tribunal_id) FROM nomeacao")
+        n_trib = cur.fetchone()[0]
+
+        cur.execute("""
+            SELECT to_char(data_nomeacao,'YYYY-MM'), COUNT(*) FROM nomeacao
+             WHERE data_nomeacao IS NOT NULL
+             GROUP BY 1 ORDER BY 1
+        """)
+        mes = cur.fetchall()
+
+        cur.execute("SELECT situacao, COUNT(*) FROM nomeacao WHERE situacao IS NOT NULL GROUP BY 1 ORDER BY 2 DESC")
+        sit = cur.fetchall()
+
+        cur.execute("""
+            SELECT t.sigla, COUNT(*) FROM nomeacao n
+              JOIN tribunal t ON t.id=n.tribunal_id
+             GROUP BY t.sigla ORDER BY 2 DESC
+        """)
+        trib = cur.fetchall()
+
+        cur.execute("""
+            SELECT profissao, COUNT(*) FROM profissional p
+              JOIN nomeacao n ON n.profissional_id=p.id
+             WHERE profissao IS NOT NULL AND profissao<>''
+             GROUP BY profissao ORDER BY 2 DESC LIMIT 10
+        """)
+        prof = cur.fetchall()
+
+        cur.execute("""
+            SELECT p.nome, COUNT(*) FROM nomeacao n
+              JOIN profissional p ON p.id=n.profissional_id
+             GROUP BY p.nome ORDER BY 2 DESC LIMIT 15
+        """)
+        top = cur.fetchall()
+
+    return render_template_string(
+        DASH_TPL,
+        kpis={"total": total, "pessoas": pessoas, "tribunais": n_trib, "valor": float(valor or 0)},
+        mes_labels=[r[0] for r in mes], mes_vals=[r[1] for r in mes],
+        sit_labels=[r[0] for r in sit], sit_vals=[r[1] for r in sit],
+        trib_labels=[r[0] for r in trib], trib_vals=[r[1] for r in trib],
+        prof_labels=[r[0] for r in prof], prof_vals=[r[1] for r in prof],
+        top_labels=[r[0][:40] for r in top], top_vals=[r[1] for r in top],
     )
 
 
