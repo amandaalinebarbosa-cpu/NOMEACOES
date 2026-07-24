@@ -364,5 +364,15 @@ def exportar(saida, tribunal, data_ini, data_fim, nome, profissao):
     click.echo(f"Exportadas {n} linhas para {saida}")
 
 
+@cli.command("web")
+@click.option("--host", default="127.0.0.1")
+@click.option("--port", default=5001, type=int)
+def web(host, port):
+    """Sobe a interface web no navegador (http://127.0.0.1:5001)."""
+    from .web import main as web_main
+    click.echo(f"Abra http://{host}:{port} no navegador")
+    web_main(host=host, port=port)
+
+
 if __name__ == "__main__":
     cli()
