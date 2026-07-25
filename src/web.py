@@ -323,6 +323,10 @@ DASH_TPL = """
     <div class="col-lg-6"><div class="card-chart"><h5>Top 10 profissões</h5><canvas id="chartProf"></canvas></div></div>
   </div>
 
+  <div class="row g-3 mb-4">
+    <div class="col-12"><div class="card-chart"><h5>Top 20 varas com mais nomeações</h5><canvas id="chartVaras"></canvas></div></div>
+  </div>
+
   <div class="row g-3">
     <div class="col-12"><div class="card-chart"><h5>Top 15 profissionais mais nomeados</h5><canvas id="chartTop"></canvas></div></div>
   </div>
@@ -365,6 +369,14 @@ new Chart(document.getElementById('chartTop'), {
     labels: {{ top_labels|tojson }},
     datasets: [{ label: 'Nomeações', data: {{ top_vals|tojson }}, backgroundColor: '#fd7e14' }]
   }, options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
+});
+
+new Chart(document.getElementById('chartVaras'), {
+  type: 'bar', data: {
+    labels: {{ vara_labels|tojson }},
+    datasets: [{ label: 'Nomeações', data: {{ vara_vals|tojson }}, backgroundColor: '#6f42c1' }]
+  }, options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } },
+    scales: { y: { ticks: { autoSkip: false, font: { size: 11 } } } } }
 });
 </script>
 </body></html>
@@ -419,6 +431,13 @@ def dashboard():
         cur.execute(f"SELECT p.nome, COUNT(*) {join} {where} GROUP BY p.nome ORDER BY 2 DESC LIMIT 15", params)
         top = cur.fetchall()
 
+        cur.execute(f"""
+            SELECT t.sigla || ' — ' || u.nome, COUNT(*)
+            {join} {where}
+            GROUP BY t.sigla, u.nome ORDER BY 2 DESC LIMIT 20
+        """, params)
+        vara = cur.fetchall()
+
         cur.execute("SELECT sigla FROM tribunal ORDER BY sigla")
         tribunais_opts = [r[0] for r in cur.fetchall()]
         cur.execute("""
@@ -439,6 +458,7 @@ def dashboard():
         trib_labels=[r[0] for r in trib], trib_vals=[r[1] for r in trib],
         prof_labels=[r[0] for r in prof], prof_vals=[r[1] for r in prof],
         top_labels=[(r[0] or '')[:40] for r in top], top_vals=[r[1] for r in top],
+        vara_labels=[(r[0] or '')[:80] for r in vara], vara_vals=[r[1] for r in vara],
     )
 
 
