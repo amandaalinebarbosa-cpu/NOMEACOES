@@ -252,13 +252,59 @@ DASH_TPL = """
   .card-chart { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); height: 100%; }
   .card-chart h5 { margin-bottom: 15px; color: #333; }
   canvas { max-height: 350px; }
+  .filters { background: #fff; padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
 </style>
 </head><body>
 <div class="container-fluid">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>📊 Dashboards</h1>
-    <div><a href="/" class="btn btn-outline-primary">← Voltar à tabela</a></div>
+    <div><a href="/?{{ query_string }}" class="btn btn-outline-primary">← Voltar à tabela</a></div>
   </div>
+
+  <form class="filters" method="get">
+    <div class="row g-2">
+      <div class="col-md-2">
+        <label class="form-label">Tribunal</label>
+        <select name="tribunal" class="form-select">
+          <option value="">(todos)</option>
+          {% for t in tribunais %}
+          <option value="{{ t }}" {% if t==filtros.tribunal %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Unidade (vara)</label>
+        <input type="text" name="unidade" class="form-control" value="{{ filtros.unidade or '' }}" placeholder="ex.: 12ª Vara">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Nome do perito</label>
+        <input type="text" name="nome" class="form-control" value="{{ filtros.nome or '' }}" placeholder="ex.: silva">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Profissão</label>
+        <select name="profissao" class="form-select">
+          <option value="">(todas)</option>
+          {% for p in profissoes %}
+          <option value="{{ p }}" {% if p==filtros.profissao %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-1">
+        <label class="form-label">De</label>
+        <input type="date" name="data_ini" class="form-control" value="{{ filtros.data_ini or '' }}">
+      </div>
+      <div class="col-md-1">
+        <label class="form-label">Até</label>
+        <input type="date" name="data_fim" class="form-control" value="{{ filtros.data_fim or '' }}">
+      </div>
+      <div class="col-md-1 d-flex align-items-end gap-2">
+        <button class="btn btn-primary flex-grow-1" type="submit">Filtrar</button>
+      </div>
+    </div>
+    <div class="mt-2">
+      <a class="btn btn-sm btn-outline-secondary" href="/dashboard">Limpar filtros</a>
+    </div>
+  </form>
 
   <div class="row g-3 mb-4">
     <div class="col-md-3"><div class="kpi"><div class="lbl">Nomeações</div><div class="num">{{ "{:,}".format(kpis.total).replace(",",".") }}</div></div></div>
@@ -327,52 +373,72 @@ new Chart(document.getElementById('chartTop'), {
 
 @app.route("/dashboard")
 def dashboard():
-    with db.connect() as conn, conn.cursor() as cur:
-        cur.execute("SELECT COUNT(*), COUNT(DISTINCT profissional_id), COALESCE(SUM(valor),0) FROM nomeacao")
-        total, pessoas, valor = cur.fetchone()
-        cur.execute("SELECT COUNT(DISTINCT tribunal_id) FROM nomeacao")
-        n_trib = cur.fetchone()[0]
+    where, params, filtros = _build_query(request.args)
+    join = """
+        FROM nomeacao n
+          JOIN tribunal t     ON t.id = n.tribunal_id
+          JOIN unidade u      ON u.id = n.unidade_id
+          JOIN profissional p ON p.id = n.profissional_id
+    """
+    # concatena where existente com uma condição adicional
+    def _and(cond):
+        return (where + " AND " if where else "WHERE ") + cond
 
-        cur.execute("""
-            SELECT to_char(data_nomeacao,'YYYY-MM'), COUNT(*) FROM nomeacao
-             WHERE data_nomeacao IS NOT NULL
-             GROUP BY 1 ORDER BY 1
-        """)
+    with db.connect() as conn, conn.cursor() as cur:
+        cur.execute(f"""
+            SELECT COUNT(*), COUNT(DISTINCT n.profissional_id),
+                   COALESCE(SUM(n.valor),0), COUNT(DISTINCT n.tribunal_id)
+            {join} {where}
+        """, params)
+        total, pessoas, valor, n_trib = cur.fetchone()
+
+        cur.execute(f"""
+            SELECT to_char(n.data_nomeacao,'YYYY-MM'), COUNT(*)
+            {join} {_and('n.data_nomeacao IS NOT NULL')}
+            GROUP BY 1 ORDER BY 1
+        """, params)
         mes = cur.fetchall()
 
-        cur.execute("SELECT situacao, COUNT(*) FROM nomeacao WHERE situacao IS NOT NULL GROUP BY 1 ORDER BY 2 DESC")
+        cur.execute(f"""
+            SELECT n.situacao, COUNT(*)
+            {join} {_and('n.situacao IS NOT NULL')}
+            GROUP BY 1 ORDER BY 2 DESC
+        """, params)
         sit = cur.fetchall()
 
-        cur.execute("""
-            SELECT t.sigla, COUNT(*) FROM nomeacao n
-              JOIN tribunal t ON t.id=n.tribunal_id
-             GROUP BY t.sigla ORDER BY 2 DESC
-        """)
+        cur.execute(f"SELECT t.sigla, COUNT(*) {join} {where} GROUP BY t.sigla ORDER BY 2 DESC", params)
         trib = cur.fetchall()
 
-        cur.execute("""
-            SELECT profissao, COUNT(*) FROM profissional p
-              JOIN nomeacao n ON n.profissional_id=p.id
-             WHERE profissao IS NOT NULL AND profissao<>''
-             GROUP BY profissao ORDER BY 2 DESC LIMIT 10
-        """)
+        cur.execute(f"""
+            SELECT p.profissao, COUNT(*)
+            {join} {_and("p.profissao IS NOT NULL AND p.profissao<>''")}
+            GROUP BY p.profissao ORDER BY 2 DESC LIMIT 10
+        """, params)
         prof = cur.fetchall()
 
-        cur.execute("""
-            SELECT p.nome, COUNT(*) FROM nomeacao n
-              JOIN profissional p ON p.id=n.profissional_id
-             GROUP BY p.nome ORDER BY 2 DESC LIMIT 15
-        """)
+        cur.execute(f"SELECT p.nome, COUNT(*) {join} {where} GROUP BY p.nome ORDER BY 2 DESC LIMIT 15", params)
         top = cur.fetchall()
+
+        cur.execute("SELECT sigla FROM tribunal ORDER BY sigla")
+        tribunais_opts = [r[0] for r in cur.fetchall()]
+        cur.execute("""
+            SELECT DISTINCT profissao FROM profissional
+             WHERE profissao IS NOT NULL AND profissao<>''
+             ORDER BY profissao
+        """)
+        profissoes_opts = [r[0] for r in cur.fetchall()]
 
     return render_template_string(
         DASH_TPL,
+        filtros=filtros,
+        tribunais=tribunais_opts, profissoes=profissoes_opts,
+        query_string=request.query_string.decode(),
         kpis={"total": total, "pessoas": pessoas, "tribunais": n_trib, "valor": float(valor or 0)},
         mes_labels=[r[0] for r in mes], mes_vals=[r[1] for r in mes],
         sit_labels=[r[0] for r in sit], sit_vals=[r[1] for r in sit],
         trib_labels=[r[0] for r in trib], trib_vals=[r[1] for r in trib],
         prof_labels=[r[0] for r in prof], prof_vals=[r[1] for r in prof],
-        top_labels=[r[0][:40] for r in top], top_vals=[r[1] for r in top],
+        top_labels=[(r[0] or '')[:40] for r in top], top_vals=[r[1] for r in top],
     )
 
 
