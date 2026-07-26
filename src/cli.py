@@ -63,7 +63,11 @@ def _coletar_intervalo(tribunal: str, data_ini: date, data_fim: date,
     soup = client.pesquisar(f)
     total_disponivel = client.total_registros(soup) or 0
     click.echo(f"[{tribunal}] SIGEO devolveu {total_disponivel} registros no total")
-    rows = 25
+    rows = 100
+    # A resposta inicial vem com 25 linhas (padrão do SIGEO). Já paginamos
+    # com rows=100 desde first=0 para pegar tudo de uma vez.
+    if total_disponivel > 0:
+        soup = client.paginar(0, rows)
     novos = total = 0
     with db.connect() as conn, conn.cursor() as cur:
         trib_id = db.upsert_tribunal(cur, tribunal)
