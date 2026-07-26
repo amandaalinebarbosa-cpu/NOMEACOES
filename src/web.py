@@ -89,10 +89,17 @@ TPL = """
         <input type="date" name="data_fim" class="form-control" value="{{ filtros.data_fim or '' }}">
       </div>
     </div>
-    <div class="mt-3 d-flex gap-2">
+    <div class="mt-3 d-flex gap-2 align-items-center">
       <button class="btn btn-primary" type="submit">Filtrar</button>
       <a class="btn btn-outline-secondary" href="/">Limpar</a>
       <a class="btn btn-success" href="/export?{{ query_string }}">📥 Baixar CSV</a>
+      <div class="form-check ms-3">
+        <input type="hidden" name="validas" value="0">
+        <input class="form-check-input" type="checkbox" name="validas" value="1" id="validasChk" {% if filtros.validas == '1' %}checked{% endif %}>
+        <label class="form-check-label" for="validasChk">
+          Somente <b>válidas</b> (ACEITA + SERVIÇO PRESTADO)
+        </label>
+      </div>
     </div>
   </form>
 
@@ -129,6 +136,9 @@ def _parse_date(s):
     return datetime.strptime(s, "%Y-%m-%d").date() if s else None
 
 
+SITUACOES_VALIDAS = ("ACEITA", "SERVIÇO PRESTADO")
+
+
 def _build_query(args):
     clauses, params = [], []
     tribunal = args.get("tribunal") or None
@@ -138,6 +148,12 @@ def _build_query(args):
     situacao = args.get("situacao") or None
     data_ini = args.get("data_ini") or None
     data_fim = args.get("data_fim") or None
+    # "válidas" = ACEITA + SERVIÇO PRESTADO. Padrão ligado; usuário desliga
+    # marcando "todas" no checkbox (querystring: validas=0).
+    # Ausência do parâmetro (primeira visita) = ligado.
+    validas = args.get("validas")
+    if validas is None:
+        validas = "1"
     if tribunal:
         clauses.append("t.sigla = %s"); params.append(tribunal)
     if unidade:
@@ -148,6 +164,8 @@ def _build_query(args):
         clauses.append("p.profissao = %s"); params.append(profissao)
     if situacao:
         clauses.append("n.situacao = %s"); params.append(situacao)
+    elif validas == "1":
+        clauses.append("n.situacao IN %s"); params.append(SITUACOES_VALIDAS)
     if data_ini:
         clauses.append("n.data_nomeacao >= %s"); params.append(_parse_date(data_ini))
     if data_fim:
@@ -155,7 +173,8 @@ def _build_query(args):
     where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
     filtros = {"tribunal": tribunal, "unidade": unidade, "nome": nome,
                "profissao": profissao, "situacao": situacao,
-               "data_ini": data_ini, "data_fim": data_fim}
+               "data_ini": data_ini, "data_fim": data_fim,
+               "validas": validas}
     return where, params, filtros
 
 
@@ -301,8 +320,15 @@ DASH_TPL = """
         <button class="btn btn-primary flex-grow-1" type="submit">Filtrar</button>
       </div>
     </div>
-    <div class="mt-2">
+    <div class="mt-2 d-flex gap-3 align-items-center">
       <a class="btn btn-sm btn-outline-secondary" href="/dashboard">Limpar filtros</a>
+      <div class="form-check">
+        <input type="hidden" name="validas" value="0">
+        <input class="form-check-input" type="checkbox" name="validas" value="1" id="dashValidasChk" {% if filtros.validas == '1' %}checked{% endif %}>
+        <label class="form-check-label" for="dashValidasChk">
+          Somente <b>válidas</b> (ACEITA + SERVIÇO PRESTADO)
+        </label>
+      </div>
     </div>
   </form>
 
