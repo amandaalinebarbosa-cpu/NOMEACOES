@@ -97,7 +97,7 @@ TPL = """
         <input type="hidden" name="validas" value="0">
         <input class="form-check-input" type="checkbox" name="validas" value="1" id="validasChk" {% if filtros.validas == '1' %}checked{% endif %}>
         <label class="form-check-label" for="validasChk">
-          Excluir <b>CANCELADAS</b>
+          Excluir <b>CANCELADA</b>
         </label>
       </div>
     </div>
@@ -327,7 +327,7 @@ DASH_TPL = """
         <input type="hidden" name="validas" value="0">
         <input class="form-check-input" type="checkbox" name="validas" value="1" id="dashValidasChk" {% if filtros.validas == '1' %}checked{% endif %}>
         <label class="form-check-label" for="dashValidasChk">
-          Excluir <b>CANCELADAS</b>
+          Excluir <b>CANCELADA</b>
         </label>
       </div>
     </div>
