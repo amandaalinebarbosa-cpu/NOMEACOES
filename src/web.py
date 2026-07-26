@@ -97,7 +97,7 @@ TPL = """
         <input type="hidden" name="validas" value="0">
         <input class="form-check-input" type="checkbox" name="validas" value="1" id="validasChk" {% if filtros.validas == '1' %}checked{% endif %}>
         <label class="form-check-label" for="validasChk">
-          Somente <b>válidas</b> (ACEITA + SERVIÇO PRESTADO)
+          Excluir <b>CANCELADAS</b>
         </label>
       </div>
     </div>
@@ -136,7 +136,7 @@ def _parse_date(s):
     return datetime.strptime(s, "%Y-%m-%d").date() if s else None
 
 
-SITUACOES_VALIDAS = ["ACEITA", "SERVIÇO PRESTADO"]
+SITUACOES_INVALIDAS = ["CANCELADA"]  # tudo o resto é "válido"
 
 
 def _build_query(args):
@@ -165,7 +165,8 @@ def _build_query(args):
     if situacao:
         clauses.append("n.situacao = %s"); params.append(situacao)
     elif validas == "1":
-        clauses.append("n.situacao = ANY(%s)"); params.append(SITUACOES_VALIDAS)
+        clauses.append("(n.situacao IS NULL OR n.situacao <> ALL(%s))")
+        params.append(SITUACOES_INVALIDAS)
     if data_ini:
         clauses.append("n.data_nomeacao >= %s"); params.append(_parse_date(data_ini))
     if data_fim:
@@ -326,7 +327,7 @@ DASH_TPL = """
         <input type="hidden" name="validas" value="0">
         <input class="form-check-input" type="checkbox" name="validas" value="1" id="dashValidasChk" {% if filtros.validas == '1' %}checked{% endif %}>
         <label class="form-check-label" for="dashValidasChk">
-          Somente <b>válidas</b> (ACEITA + SERVIÇO PRESTADO)
+          Excluir <b>CANCELADAS</b>
         </label>
       </div>
     </div>
