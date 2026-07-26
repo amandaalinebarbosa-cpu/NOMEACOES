@@ -136,7 +136,7 @@ def _parse_date(s):
     return datetime.strptime(s, "%Y-%m-%d").date() if s else None
 
 
-SITUACOES_VALIDAS = ("ACEITA", "SERVIÇO PRESTADO")
+SITUACOES_VALIDAS = ["ACEITA", "SERVIÇO PRESTADO"]
 
 
 def _build_query(args):
@@ -165,7 +165,7 @@ def _build_query(args):
     if situacao:
         clauses.append("n.situacao = %s"); params.append(situacao)
     elif validas == "1":
-        clauses.append("n.situacao IN %s"); params.append(SITUACOES_VALIDAS)
+        clauses.append("n.situacao = ANY(%s)"); params.append(SITUACOES_VALIDAS)
     if data_ini:
         clauses.append("n.data_nomeacao >= %s"); params.append(_parse_date(data_ini))
     if data_fim:
