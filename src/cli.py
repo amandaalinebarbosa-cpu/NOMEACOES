@@ -261,7 +261,9 @@ def import_peritos_xml(xml_paths, match_existentes):
             for dto in root.findall("dto"):
                 nome_el = dto.find("nome")
                 cat_el = dto.find("categoria")
-                prof_el = dto.find("profissão") or dto.find("profissao")
+                prof_el = dto.find("profissão")
+                if prof_el is None:
+                    prof_el = dto.find("profissao")
                 esp_el = dto.find("especialidade")
                 nome = (nome_el.text or "").strip() if nome_el is not None else ""
                 categoria = (cat_el.text or "").strip() if cat_el is not None else ""
