@@ -237,6 +237,91 @@ def import_profissoes(csv_path):
     click.echo(f"Linhas processadas: {ok}")
 
 
+@cli.command("import-peritos-xml")
+@click.argument("xml_paths", nargs=-1, required=True,
+                type=click.Path(exists=True, dir_okay=False))
+@click.option("--match-existentes/--sem-match", default=True,
+              help="Depois de importar, roda UPDATE para preencher profissao "
+                   "de peritos já existentes com match por nome normalizado.")
+def import_peritos_xml(xml_paths, match_existentes):
+    """Importa cadastro do SIGEO em formato XML (<dto> tags).
+
+    Espera arquivos como <resultadoPesquisa><dto>...</dto>...</resultadoPesquisa>
+    com campos: nome, categoria, profissão (com acento), especialidade.
+    Pode passar vários arquivos ao mesmo tempo.
+    """
+    import xml.etree.ElementTree as ET
+
+    total = novos_prof = novas_qual = 0
+    with db.connect() as conn, conn.cursor() as cur:
+        for path in xml_paths:
+            click.echo(f"\nLendo {path}...")
+            tree = ET.parse(path)
+            root = tree.getroot()
+            for dto in root.findall("dto"):
+                nome_el = dto.find("nome")
+                cat_el = dto.find("categoria")
+                prof_el = dto.find("profissão") or dto.find("profissao")
+                esp_el = dto.find("especialidade")
+                nome = (nome_el.text or "").strip() if nome_el is not None else ""
+                categoria = (cat_el.text or "").strip() if cat_el is not None else ""
+                profissao = (prof_el.text or "").strip() if prof_el is not None else ""
+                especialidade = (esp_el.text or "").strip() if esp_el is not None else ""
+                especialidade = especialidade or None
+                if not (nome and categoria and profissao):
+                    continue
+                total += 1
+                cur.execute("""
+                    INSERT INTO profissional (nome, profissao) VALUES (%s, %s)
+                    ON CONFLICT (nome) DO UPDATE SET profissao =
+                        COALESCE(profissional.profissao, EXCLUDED.profissao)
+                    RETURNING id, (xmax = 0) AS inserted
+                """, (nome, profissao))
+                pid, inserted = cur.fetchone()
+                if inserted:
+                    novos_prof += 1
+                cur.execute("""
+                    INSERT INTO qualificacao
+                        (profissional_id, categoria, profissao, especialidade)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (profissional_id, categoria, profissao,
+                                 (COALESCE(especialidade, ''))) DO NOTHING
+                    RETURNING id
+                """, (pid, categoria, profissao, especialidade))
+                if cur.fetchone():
+                    novas_qual += 1
+                if total % 2000 == 0:
+                    click.echo(f"  {total} processados...")
+                    conn.commit()
+            conn.commit()
+        click.echo(f"\nTotal: {total} | profissionais novos: {novos_prof} | qualificações novas: {novas_qual}")
+
+        if match_existentes:
+            click.echo("\nRodando match normalizado (unaccent + lowercase)...")
+            cur.execute("CREATE EXTENSION IF NOT EXISTS unaccent;")
+            cur.execute("""
+                UPDATE profissional p1
+                   SET profissao = p2.profissao
+                  FROM profissional p2
+                 WHERE p1.profissao IS NULL
+                   AND p2.profissao IS NOT NULL
+                   AND unaccent(lower(trim(p1.nome))) =
+                       unaccent(lower(trim(p2.nome)))
+            """)
+            atualizados = cur.rowcount
+            conn.commit()
+            click.echo(f"Peritos atualizados via match normalizado: {atualizados}")
+
+            cur.execute("""
+                SELECT
+                  (SELECT COUNT(*) FROM nomeacao n JOIN profissional p ON p.id=n.profissional_id WHERE p.profissao IS NOT NULL) AS com_profissao,
+                  (SELECT COUNT(*) FROM nomeacao n JOIN profissional p ON p.id=n.profissional_id WHERE p.profissao IS NULL) AS sem_profissao
+            """)
+            com, sem = cur.fetchone()
+            click.echo(f"Nomeações COM profissão: {com}")
+            click.echo(f"Nomeações SEM profissão: {sem}")
+
+
 @cli.command("import-peritos")
 @click.argument("tsv_path", type=click.Path(exists=True, dir_okay=False))
 def import_peritos(tsv_path):
