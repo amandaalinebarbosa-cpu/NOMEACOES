@@ -260,26 +260,104 @@ def export():
 DASH_TPL = """
 <!doctype html>
 <html lang="pt-br"><head>
-<meta charset="utf-8"><title>Dashboards — Nomeações SIGEO</title>
+<meta charset="utf-8"><title>Peritus Dominus — Nomeações SIGEO</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
-  body { padding: 20px; background: #f5f7fb; }
-  .kpi { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-  .kpi .num { font-size: 2rem; font-weight: 700; color: #0d6efd; }
-  .kpi .lbl { color: #6c757d; font-size: 0.85rem; text-transform: uppercase; letter-spacing: .5px; }
-  .card-chart { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); height: 100%; }
-  .card-chart h5 { margin-bottom: 15px; color: #333; }
+  :root {
+    --pd-navy:  #1a2847;
+    --pd-navy2: #0f1a33;
+    --pd-gold:  #c9a961;
+    --pd-cream: #f6f3ec;
+    --pd-ink:   #2b2b2b;
+    --pd-mute:  #8b8477;
+  }
+  html, body { background: var(--pd-cream); color: var(--pd-ink); }
+  body { font-family: 'Inter', system-ui, sans-serif; }
+  h1, h2, h3, h4, h5, .brand { font-family: 'Cormorant Garamond', 'Times New Roman', serif; letter-spacing: .5px; }
+
+  .pd-header {
+    background: linear-gradient(135deg, var(--pd-navy) 0%, var(--pd-navy2) 100%);
+    color: #fff; padding: 22px 28px; margin-bottom: 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 3px solid var(--pd-gold);
+  }
+  .brand { font-size: 1.9rem; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+  .brand .seal {
+    width: 42px; height: 42px; border: 2px solid var(--pd-gold);
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%; color: var(--pd-gold); font-weight: 700; font-size: 1.1rem;
+  }
+  .brand small { color: var(--pd-gold); font-size: .75rem; letter-spacing: 2px; text-transform: uppercase; font-family: 'Inter', sans-serif; font-weight: 500; display: block; margin-top: 2px; }
+
+  .pd-nav a { color: #fff; text-decoration: none; margin-left: 20px; font-size: .9rem; font-weight: 500; opacity: .85; }
+  .pd-nav a:hover { opacity: 1; color: var(--pd-gold); }
+  .pd-nav .btn-print { background: var(--pd-gold); color: var(--pd-navy); border: 0; padding: 8px 18px; border-radius: 4px; font-weight: 600; }
+  .pd-nav .btn-print:hover { background: #e0c278; color: var(--pd-navy); }
+
+  .container-fluid { padding: 0 28px 40px; }
+
+  .kpi {
+    background: #fff; border-radius: 10px; padding: 20px 22px;
+    border-top: 3px solid var(--pd-gold);
+    box-shadow: 0 1px 4px rgba(26,40,71,.08);
+  }
+  .kpi .num { font-family: 'Cormorant Garamond', serif; font-size: 2.4rem; font-weight: 700; color: var(--pd-navy); line-height: 1.1; }
+  .kpi .lbl { color: var(--pd-mute); font-size: .75rem; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; margin-bottom: 6px; }
+
+  .card-chart {
+    background: #fff; border-radius: 10px; padding: 22px;
+    box-shadow: 0 1px 4px rgba(26,40,71,.08); height: 100%;
+  }
+  .card-chart h5 {
+    margin-bottom: 16px; color: var(--pd-navy); font-weight: 700;
+    font-size: 1.25rem; border-bottom: 1px solid #e9e4d6; padding-bottom: 10px;
+  }
   canvas { max-height: 350px; }
-  .filters { background: #fff; padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+
+  .filters {
+    background: #fff; padding: 20px 22px; border-radius: 10px; margin-bottom: 22px;
+    box-shadow: 0 1px 4px rgba(26,40,71,.08); border-left: 3px solid var(--pd-gold);
+  }
+  .filters .form-label { color: var(--pd-mute); font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 4px; }
+  .filters .form-control, .filters .form-select { border-color: #d8d2c2; font-size: .9rem; }
+  .filters .form-control:focus, .filters .form-select:focus { border-color: var(--pd-gold); box-shadow: 0 0 0 .2rem rgba(201,169,97,.2); }
+
+  .btn-pd {
+    background: var(--pd-navy); color: #fff; border: 0; font-weight: 600;
+    padding: 8px 20px; border-radius: 4px; letter-spacing: .5px;
+  }
+  .btn-pd:hover { background: var(--pd-navy2); color: var(--pd-gold); }
+  .btn-outline-pd {
+    background: #fff; color: var(--pd-navy); border: 1px solid var(--pd-navy);
+    font-weight: 500; padding: 7px 16px; border-radius: 4px;
+  }
+  .btn-outline-pd:hover { background: var(--pd-navy); color: #fff; }
+
+  .form-check-input:checked { background-color: var(--pd-gold); border-color: var(--pd-gold); }
+
+  .section-title { color: var(--pd-navy); font-size: 1rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; font-family: 'Inter', sans-serif; margin: 28px 0 14px; padding-left: 10px; border-left: 3px solid var(--pd-gold); }
 </style>
 </head><body>
-<div class="container-fluid">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>📊 Dashboards</h1>
-    <div><a href="/?{{ query_string }}" class="btn btn-outline-primary">← Voltar à tabela</a></div>
+
+<header class="pd-header">
+  <div class="brand">
+    <span class="seal">PD</span>
+    <div>Peritus Dominus
+      <small>Nomeações SIGEO · Justiça do Trabalho</small>
+    </div>
   </div>
+  <nav class="pd-nav">
+    <a href="/?{{ query_string }}">Tabela</a>
+    <a href="/dashboard?{{ query_string }}">Dashboard</a>
+    <a href="/export?{{ query_string }}">CSV</a>
+    <a href="/relatorio?{{ query_string }}" class="btn-print">📄 Gerar Relatório PDF</a>
+  </nav>
+</header>
+
+<div class="container-fluid">
 
   <form class="filters" method="get">
     <div class="row g-2">
@@ -318,11 +396,11 @@ DASH_TPL = """
         <input type="date" name="data_fim" class="form-control" value="{{ filtros.data_fim or '' }}">
       </div>
       <div class="col-md-1 d-flex align-items-end gap-2">
-        <button class="btn btn-primary flex-grow-1" type="submit">Filtrar</button>
+        <button class="btn btn-pd flex-grow-1" type="submit">Filtrar</button>
       </div>
     </div>
-    <div class="mt-2 d-flex gap-3 align-items-center">
-      <a class="btn btn-sm btn-outline-secondary" href="/dashboard">Limpar filtros</a>
+    <div class="mt-3 d-flex gap-3 align-items-center">
+      <a class="btn btn-sm btn-outline-pd" href="/dashboard">Limpar filtros</a>
       <div class="form-check">
         <input type="hidden" name="validas" value="0">
         <input class="form-check-input" type="checkbox" name="validas" value="1" id="dashValidasChk" {% if filtros.validas == '1' %}checked{% endif %}>
@@ -360,48 +438,51 @@ DASH_TPL = """
 </div>
 
 <script>
-const cores = ['#0d6efd','#6610f2','#6f42c1','#d63384','#dc3545','#fd7e14','#ffc107','#198754','#20c997','#0dcaf0','#6c757d','#adb5bd','#495057','#212529','#e83e8c'];
+const PD_NAVY = '#1a2847', PD_GOLD = '#c9a961', PD_NAVY2='#0f1a33';
+const cores = ['#1a2847','#c9a961','#2d4068','#8b7340','#4a5e85','#b8975a','#5c7098','#a68846','#2b3b5f','#7a6238','#394a73','#d6bb81','#1f3156','#9f864c','#536a94'];
+Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+Chart.defaults.color = '#2b2b2b';
 
 new Chart(document.getElementById('chartMes'), {
   type: 'line', data: {
     labels: {{ mes_labels|tojson }},
     datasets: [{ label: 'Nomeações', data: {{ mes_vals|tojson }},
-      borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,.15)', fill: true, tension: .3 }]
+      borderColor: PD_NAVY, backgroundColor: 'rgba(26,40,71,.12)', fill: true, tension: .3, pointBackgroundColor: PD_GOLD, pointRadius: 3 }]
   }, options: { responsive: true, plugins: { legend: { display: false } } }
 });
 
 new Chart(document.getElementById('chartSit'), {
   type: 'doughnut', data: {
     labels: {{ sit_labels|tojson }},
-    datasets: [{ data: {{ sit_vals|tojson }}, backgroundColor: cores }]
-  }, options: { responsive: true }
+    datasets: [{ data: {{ sit_vals|tojson }}, backgroundColor: cores, borderWidth: 2, borderColor: '#fff' }]
+  }, options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
 });
 
 new Chart(document.getElementById('chartTrib'), {
   type: 'bar', data: {
     labels: {{ trib_labels|tojson }},
-    datasets: [{ label: 'Nomeações', data: {{ trib_vals|tojson }}, backgroundColor: '#0d6efd' }]
+    datasets: [{ label: 'Nomeações', data: {{ trib_vals|tojson }}, backgroundColor: PD_NAVY, borderRadius: 4 }]
   }, options: { responsive: true, plugins: { legend: { display: false } } }
 });
 
 new Chart(document.getElementById('chartProf'), {
   type: 'bar', data: {
     labels: {{ prof_labels|tojson }},
-    datasets: [{ label: 'Nomeações', data: {{ prof_vals|tojson }}, backgroundColor: '#20c997' }]
+    datasets: [{ label: 'Nomeações', data: {{ prof_vals|tojson }}, backgroundColor: PD_GOLD, borderRadius: 4 }]
   }, options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
 });
 
 new Chart(document.getElementById('chartTop'), {
   type: 'bar', data: {
     labels: {{ top_labels|tojson }},
-    datasets: [{ label: 'Nomeações', data: {{ top_vals|tojson }}, backgroundColor: '#fd7e14' }]
+    datasets: [{ label: 'Nomeações', data: {{ top_vals|tojson }}, backgroundColor: PD_NAVY2, borderRadius: 4 }]
   }, options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
 });
 
 new Chart(document.getElementById('chartVaras'), {
   type: 'bar', data: {
     labels: {{ vara_labels|tojson }},
-    datasets: [{ label: 'Nomeações', data: {{ vara_vals|tojson }}, backgroundColor: '#6f42c1' }]
+    datasets: [{ label: 'Nomeações', data: {{ vara_vals|tojson }}, backgroundColor: PD_NAVY, borderRadius: 4 }]
   }, options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } },
     scales: { y: { ticks: { autoSkip: false, font: { size: 11 } } } } }
 });
@@ -486,6 +567,231 @@ def dashboard():
         prof_labels=[r[0] for r in prof], prof_vals=[r[1] for r in prof],
         top_labels=[(r[0] or '')[:40] for r in top], top_vals=[r[1] for r in top],
         vara_labels=[(r[0] or '')[:80] for r in vara], vara_vals=[r[1] for r in vara],
+    )
+
+
+# ------------------------- Relatório imprimível (PDF) ------------------------- #
+
+RELATORIO_TPL = """
+<!doctype html><html lang="pt-br"><head>
+<meta charset="utf-8"><title>Relatório · Peritus Dominus</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  @page { size: A4; margin: 18mm 14mm; }
+  * { box-sizing: border-box; }
+  html, body { background: #fff; color: #2b2b2b; margin: 0; }
+  body { font-family: 'Inter', system-ui, sans-serif; font-size: 11pt; }
+  h1, h2, h3, .brand { font-family: 'Cormorant Garamond', 'Times New Roman', serif; }
+  .wrap { max-width: 190mm; margin: 0 auto; padding: 24px 16px; }
+
+  .cabec { display: flex; justify-content: space-between; align-items: flex-start;
+           border-bottom: 2px solid #c9a961; padding-bottom: 14px; margin-bottom: 18px; }
+  .brand { font-size: 1.6rem; color: #1a2847; font-weight: 700; margin: 0; }
+  .brand small { display: block; color: #8b8477; font-family: 'Inter', sans-serif;
+                 font-size: .72rem; letter-spacing: 2px; text-transform: uppercase; font-weight: 500; }
+  .meta { text-align: right; font-size: .78rem; color: #555; line-height: 1.5; }
+
+  .titulo-relatorio { font-size: 1.6rem; color: #1a2847; margin: 10px 0 4px; }
+  .subtitulo { color: #8b8477; font-size: .9rem; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 18px; }
+
+  .filtros-aplicados {
+    background: #f6f3ec; border-left: 3px solid #c9a961; padding: 10px 14px;
+    font-size: .85rem; color: #4a4a4a; margin-bottom: 18px;
+  }
+  .filtros-aplicados strong { color: #1a2847; }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 22px; }
+  .kpi-box { border: 1px solid #e9e4d6; border-top: 3px solid #c9a961; padding: 10px 14px; border-radius: 4px; }
+  .kpi-box .lbl { color: #8b8477; font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 600; }
+  .kpi-box .num { font-family: 'Cormorant Garamond', serif; font-size: 1.7rem; color: #1a2847; font-weight: 700; }
+
+  .section-title { font-family: 'Inter', sans-serif; color: #1a2847; font-size: .85rem;
+                   text-transform: uppercase; letter-spacing: 2px; font-weight: 600;
+                   border-bottom: 1px solid #c9a961; padding-bottom: 6px; margin: 20px 0 10px; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .chart-card { border: 1px solid #e9e4d6; padding: 10px 12px 6px; border-radius: 4px; }
+  .chart-card h4 { font-size: .95rem; color: #1a2847; margin: 2px 0 8px; }
+  canvas { max-height: 230px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid #e9e4d6; text-align: left; }
+  th { background: #1a2847; color: #fff; font-weight: 600; letter-spacing: .5px; }
+
+  .rodape { margin-top: 28px; padding-top: 10px; border-top: 1px solid #e9e4d6;
+            font-size: .72rem; color: #8b8477; display: flex; justify-content: space-between; }
+
+  .no-print { position: fixed; top: 12px; right: 12px; z-index: 100; }
+  .no-print button {
+    background: #1a2847; color: #fff; border: 0; padding: 10px 20px;
+    border-radius: 4px; cursor: pointer; font-weight: 600; letter-spacing: .5px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  }
+  .no-print button:hover { background: #0f1a33; }
+  @media print { .no-print { display: none !important; } .page-break { page-break-before: always; } }
+</style></head><body>
+
+<div class="no-print">
+  <button onclick="window.print()">📄 Imprimir / Salvar PDF</button>
+</div>
+
+<div class="wrap">
+  <div class="cabec">
+    <div>
+      <h1 class="brand">Peritus Dominus
+        <small>Nomeações SIGEO · Justiça do Trabalho</small>
+      </h1>
+    </div>
+    <div class="meta">
+      <strong>Relatório emitido em</strong><br>
+      {{ emitido_em }}<br>
+      Fonte: SIGEO/CNJ (público)
+    </div>
+  </div>
+
+  <div class="titulo-relatorio">Relatório de Nomeações Periciais</div>
+  <div class="subtitulo">
+    {% if filtros.data_ini or filtros.data_fim %}
+      Período: {{ filtros.data_ini or '—' }} a {{ filtros.data_fim or '—' }}
+    {% else %}
+      Todo o período disponível
+    {% endif %}
+  </div>
+
+  <div class="filtros-aplicados">
+    <strong>Filtros aplicados:</strong>
+    {% set partes = [] %}
+    {% if filtros.tribunal %}{% set _ = partes.append('Tribunal: ' ~ filtros.tribunal) %}{% endif %}
+    {% if filtros.unidade %}{% set _ = partes.append('Unidade: ' ~ filtros.unidade) %}{% endif %}
+    {% if filtros.nome %}{% set _ = partes.append('Perito: ' ~ filtros.nome) %}{% endif %}
+    {% if filtros.profissao %}{% set _ = partes.append('Profissão: ' ~ filtros.profissao) %}{% endif %}
+    {% if filtros.validas == '1' %}{% set _ = partes.append('Excluídas as CANCELADA') %}{% endif %}
+    {{ partes|join(' · ') or 'nenhum filtro específico' }}
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi-box"><div class="lbl">Nomeações</div><div class="num">{{ "{:,}".format(kpis.total).replace(",",".") }}</div></div>
+    <div class="kpi-box"><div class="lbl">Profissionais</div><div class="num">{{ "{:,}".format(kpis.pessoas).replace(",",".") }}</div></div>
+    <div class="kpi-box"><div class="lbl">Tribunais</div><div class="num">{{ kpis.tribunais }}</div></div>
+    <div class="kpi-box"><div class="lbl">Valor total</div><div class="num">R$ {{ "{:,.0f}".format(kpis.valor or 0).replace(",","X").replace(".",",").replace("X",".") }}</div></div>
+  </div>
+
+  <div class="section-title">Distribuição temporal</div>
+  <div class="chart-card"><h4>Nomeações por mês</h4><canvas id="chartMes"></canvas></div>
+
+  <div class="grid-2" style="margin-top: 16px;">
+    <div class="chart-card"><h4>Por situação</h4><canvas id="chartSit"></canvas></div>
+    <div class="chart-card"><h4>Por tribunal</h4><canvas id="chartTrib"></canvas></div>
+  </div>
+
+  <div class="page-break"></div>
+  <div class="section-title">Rankings</div>
+
+  <div class="chart-card" style="margin-bottom: 14px;"><h4>Top 10 profissões</h4><canvas id="chartProf"></canvas></div>
+  <div class="chart-card" style="margin-bottom: 14px;"><h4>Top 15 profissionais mais nomeados</h4><canvas id="chartTop"></canvas></div>
+
+  <div class="section-title">Resumo tabular</div>
+  <table>
+    <thead><tr><th>#</th><th>Profissional</th><th>Nomeações</th></tr></thead>
+    <tbody>
+    {% for i in range(top_labels|length) %}
+      <tr><td>{{ i+1 }}</td><td>{{ top_labels[i] }}</td><td>{{ top_vals[i] }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="rodape">
+    <div>Peritus Dominus · peritusdominus.com.br</div>
+    <div>Página gerada automaticamente — dados oficiais SIGEO</div>
+  </div>
+</div>
+
+<script>
+const PD_NAVY = '#1a2847', PD_GOLD = '#c9a961';
+const cores = ['#1a2847','#c9a961','#2d4068','#8b7340','#4a5e85','#b8975a','#5c7098','#a68846','#2b3b5f','#7a6238'];
+Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+Chart.defaults.animation = false;
+
+new Chart(document.getElementById('chartMes'), {
+  type: 'line', data: {
+    labels: {{ mes_labels|tojson }},
+    datasets: [{ data: {{ mes_vals|tojson }}, borderColor: PD_NAVY, backgroundColor: 'rgba(26,40,71,.12)', fill: true, tension: .3 }]
+  }, options: { plugins: { legend: { display: false } }, maintainAspectRatio: false }
+});
+new Chart(document.getElementById('chartSit'), {
+  type: 'doughnut', data: {
+    labels: {{ sit_labels|tojson }},
+    datasets: [{ data: {{ sit_vals|tojson }}, backgroundColor: cores }]
+  }, options: { plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }, maintainAspectRatio: false }
+});
+new Chart(document.getElementById('chartTrib'), {
+  type: 'bar', data: {
+    labels: {{ trib_labels|tojson }},
+    datasets: [{ data: {{ trib_vals|tojson }}, backgroundColor: PD_NAVY }]
+  }, options: { plugins: { legend: { display: false } }, maintainAspectRatio: false }
+});
+new Chart(document.getElementById('chartProf'), {
+  type: 'bar', data: {
+    labels: {{ prof_labels|tojson }},
+    datasets: [{ data: {{ prof_vals|tojson }}, backgroundColor: PD_GOLD }]
+  }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false }
+});
+new Chart(document.getElementById('chartTop'), {
+  type: 'bar', data: {
+    labels: {{ top_labels|tojson }},
+    datasets: [{ data: {{ top_vals|tojson }}, backgroundColor: PD_NAVY }]
+  }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false }
+});
+</script>
+</body></html>
+"""
+
+
+@app.route("/relatorio")
+def relatorio():
+    """Versão imprimível com os mesmos filtros do dashboard."""
+    where, params, filtros = _build_query(request.args)
+    join = """
+        FROM nomeacao n
+          JOIN tribunal t     ON t.id = n.tribunal_id
+          JOIN unidade u      ON u.id = n.unidade_id
+          JOIN profissional p ON p.id = n.profissional_id
+    """
+    def _and(cond):
+        return (where + " AND " if where else "WHERE ") + cond
+
+    with db.connect() as conn, conn.cursor() as cur:
+        cur.execute(f"""
+            SELECT COUNT(*), COUNT(DISTINCT n.profissional_id),
+                   COALESCE(SUM(n.valor),0), COUNT(DISTINCT n.tribunal_id)
+            {join} {where}
+        """, params)
+        total, pessoas, valor, n_trib = cur.fetchone()
+
+        cur.execute(f"SELECT to_char(n.data_nomeacao,'YYYY-MM'), COUNT(*) {join} {_and('n.data_nomeacao IS NOT NULL')} GROUP BY 1 ORDER BY 1", params)
+        mes = cur.fetchall()
+        cur.execute(f"SELECT n.situacao, COUNT(*) {join} {_and('n.situacao IS NOT NULL')} GROUP BY 1 ORDER BY 2 DESC", params)
+        sit = cur.fetchall()
+        cur.execute(f"SELECT t.sigla, COUNT(*) {join} {where} GROUP BY t.sigla ORDER BY 2 DESC", params)
+        trib = cur.fetchall()
+        _cond_prof = _and("p.profissao IS NOT NULL AND p.profissao<>''")
+        cur.execute(f"SELECT p.profissao, COUNT(*) {join} {_cond_prof} GROUP BY p.profissao ORDER BY 2 DESC LIMIT 10", params)
+        prof = cur.fetchall()
+        cur.execute(f"SELECT p.nome, COUNT(*) {join} {where} GROUP BY p.nome ORDER BY 2 DESC LIMIT 15", params)
+        top = cur.fetchall()
+
+    return render_template_string(
+        RELATORIO_TPL,
+        filtros=filtros,
+        emitido_em=datetime.now().strftime("%d/%m/%Y às %H:%M"),
+        kpis={"total": total, "pessoas": pessoas, "tribunais": n_trib, "valor": float(valor or 0)},
+        mes_labels=[r[0] for r in mes], mes_vals=[r[1] for r in mes],
+        sit_labels=[r[0] for r in sit], sit_vals=[r[1] for r in sit],
+        trib_labels=[r[0] for r in trib], trib_vals=[r[1] for r in trib],
+        prof_labels=[r[0] for r in prof], prof_vals=[r[1] for r in prof],
+        top_labels=[(r[0] or '')[:50] for r in top], top_vals=[r[1] for r in top],
     )
 
 
