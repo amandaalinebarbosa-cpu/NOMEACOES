@@ -18,29 +18,107 @@ app = Flask(__name__)
 TPL = """
 <!doctype html>
 <html lang="pt-br"><head>
-<meta charset="utf-8"><title>Nomeações SIGEO</title>
+<meta charset="utf-8"><title>Peritus Dominus — Nomeações SIGEO</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  body { padding: 20px; }
-  .filters { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-  table.dataTable { font-size: 0.9rem; }
-  th { position: sticky; top: 0; background: #fff; }
-  .stats { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
-  .stat-card { background: #e7f1ff; padding: 10px 20px; border-radius: 8px; min-width: 150px; }
-  .stat-num { font-size: 1.6rem; font-weight: 600; color: #0d6efd; }
+  :root {
+    --pd-navy:  #1E3A2A;
+    --pd-navy2: #142821;
+    --pd-gold:  #B8941F;
+    --pd-green: #16A34A;
+    --pd-cream: #F5F0E6;
+    --pd-ink:   #2C2C2C;
+    --pd-mute:  #8B8477;
+  }
+  html, body { background: var(--pd-cream); color: var(--pd-ink); }
+  body { font-family: 'Inter', system-ui, sans-serif; }
+  h1, h2, h3, h4, h5, .brand { font-family: 'Cormorant Garamond', 'Times New Roman', serif; letter-spacing: .5px; }
+
+  .pd-header {
+    background: linear-gradient(135deg, var(--pd-navy) 0%, var(--pd-navy2) 100%);
+    color: #fff; padding: 22px 28px; margin-bottom: 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 3px solid var(--pd-gold);
+  }
+  .brand { font-size: 1.9rem; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+  .brand .seal {
+    width: 42px; height: 42px; border: 2px solid var(--pd-gold);
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%; color: var(--pd-gold); font-weight: 700; font-size: 1.1rem;
+  }
+  .brand small { color: var(--pd-gold); font-size: .75rem; letter-spacing: 2px; text-transform: uppercase; font-family: 'Inter', sans-serif; font-weight: 500; display: block; margin-top: 2px; }
+
+  .pd-nav a { color: #fff; text-decoration: none; margin-left: 20px; font-size: .9rem; font-weight: 500; opacity: .85; }
+  .pd-nav a:hover { opacity: 1; color: var(--pd-gold); }
+  .pd-nav .btn-print { background: var(--pd-gold); color: var(--pd-navy); border: 0; padding: 8px 18px; border-radius: 4px; font-weight: 600; }
+  .pd-nav .btn-print:hover { background: #d4ab2d; color: var(--pd-navy); }
+
+  .container-fluid { padding: 0 28px 40px; }
+
+  .stats { display: flex; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+  .stat-card {
+    background: #fff; padding: 16px 22px; border-radius: 10px;
+    border-top: 3px solid var(--pd-gold); min-width: 200px;
+    box-shadow: 0 1px 4px rgba(30,58,42,.08);
+  }
+  .stat-num { font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-weight: 700; color: var(--pd-navy); line-height: 1.1; }
+  .stat-card > div:last-child { color: var(--pd-mute); font-size: .72rem; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; margin-top: 4px; }
+
+  .filters {
+    background: #fff; padding: 20px 22px; border-radius: 10px; margin-bottom: 22px;
+    box-shadow: 0 1px 4px rgba(30,58,42,.08); border-left: 3px solid var(--pd-gold);
+  }
+  .filters .form-label { color: var(--pd-mute); font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 4px; }
+  .filters .form-control, .filters .form-select { border-color: #d8d2c2; font-size: .9rem; }
+  .filters .form-control:focus, .filters .form-select:focus { border-color: var(--pd-gold); box-shadow: 0 0 0 .2rem rgba(184,148,31,.2); }
+
+  .btn-pd { background: var(--pd-navy); color: #fff; border: 0; font-weight: 600; padding: 8px 20px; border-radius: 4px; letter-spacing: .5px; }
+  .btn-pd:hover { background: var(--pd-navy2); color: var(--pd-gold); }
+  .btn-outline-pd { background: #fff; color: var(--pd-navy); border: 1px solid var(--pd-navy); font-weight: 500; padding: 7px 16px; border-radius: 4px; }
+  .btn-outline-pd:hover { background: var(--pd-navy); color: #fff; }
+  .btn-gold { background: var(--pd-gold); color: var(--pd-navy); border: 0; font-weight: 600; padding: 8px 16px; border-radius: 4px; }
+  .btn-gold:hover { background: #d4ab2d; color: var(--pd-navy); }
+  .btn-green { background: var(--pd-green); color: #fff; border: 0; font-weight: 600; padding: 8px 16px; border-radius: 4px; }
+  .btn-green:hover { background: #0f7a37; color: #fff; }
+
+  .form-check-input:checked { background-color: var(--pd-gold); border-color: var(--pd-gold); }
+
+  table.dataTable { font-size: .88rem; background: #fff; border-radius: 8px; overflow: hidden; }
+  table.dataTable thead th {
+    position: sticky; top: 0; background: var(--pd-navy); color: #fff;
+    border-bottom: 2px solid var(--pd-gold); font-weight: 600;
+    text-transform: uppercase; font-size: .72rem; letter-spacing: 1px; padding: 10px 12px;
+  }
+  table.dataTable tbody tr:nth-of-type(even) { background: #fafaf5; }
+  table.dataTable tbody tr:hover { background: #f0ead9; }
+  table.dataTable td { padding: 8px 12px; border-color: #e9e4d6; }
 </style>
 </head><body>
-<div class="container-fluid">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>Nomeações SIGEO — Justiça do Trabalho</h1>
-    <a href="/dashboard" class="btn btn-primary">📊 Ver Dashboards</a>
+
+<header class="pd-header">
+  <div class="brand">
+    <span class="seal">PD</span>
+    <div>Peritus Dominus
+      <small>Nomeações SIGEO · Justiça do Trabalho</small>
+    </div>
   </div>
+  <nav class="pd-nav">
+    <a href="/?{{ query_string }}">Tabela</a>
+    <a href="/dashboard?{{ query_string }}">Dashboard</a>
+    <a href="/export?{{ query_string }}">CSV</a>
+    <a href="/export/xlsx?{{ query_string }}">📊 Excel</a>
+    <a href="/relatorio?{{ query_string }}" class="btn-print">📄 Gerar Relatório PDF</a>
+  </nav>
+</header>
+
+<div class="container-fluid">
 
   <div class="stats">
-    <div class="stat-card"><div class="stat-num">{{ "{:,}".format(total_geral).replace(",", ".") }}</div><div>total no banco</div></div>
-    <div class="stat-card"><div class="stat-num">{{ "{:,}".format(total_filtrado).replace(",", ".") }}</div><div>com filtros atuais</div></div>
-    <div class="stat-card"><div class="stat-num">{{ "{:,}".format(total_profissionais).replace(",", ".") }}</div><div>profissionais distintos</div></div>
+    <div class="stat-card"><div class="stat-num">{{ "{:,}".format(total_geral).replace(",", ".") }}</div><div>Total no banco</div></div>
+    <div class="stat-card"><div class="stat-num">{{ "{:,}".format(total_filtrado).replace(",", ".") }}</div><div>Com filtros atuais</div></div>
+    <div class="stat-card"><div class="stat-num">{{ "{:,}".format(total_profissionais).replace(",", ".") }}</div><div>Profissionais distintos</div></div>
   </div>
 
   <form class="filters" method="get">
@@ -89,10 +167,11 @@ TPL = """
         <input type="date" name="data_fim" class="form-control" value="{{ filtros.data_fim or '' }}">
       </div>
     </div>
-    <div class="mt-3 d-flex gap-2 align-items-center">
-      <button class="btn btn-primary" type="submit">Filtrar</button>
-      <a class="btn btn-outline-secondary" href="/">Limpar</a>
-      <a class="btn btn-success" href="/export?{{ query_string }}">📥 Baixar CSV</a>
+    <div class="mt-3 d-flex gap-2 align-items-center flex-wrap">
+      <button class="btn btn-pd" type="submit">Filtrar</button>
+      <a class="btn btn-outline-pd" href="/">Limpar</a>
+      <a class="btn btn-green" href="/export?{{ query_string }}">📥 CSV</a>
+      <a class="btn btn-gold" href="/export/xlsx?{{ query_string }}">📊 Excel</a>
       <div class="form-check ms-3">
         <input type="hidden" name="validas" value="0">
         <input class="form-check-input" type="checkbox" name="validas" value="1" id="validasChk" {% if filtros.validas == '1' %}checked{% endif %}>
@@ -103,7 +182,7 @@ TPL = """
     </div>
   </form>
 
-  <p class="text-muted">Mostrando {{ linhas|length }} de {{ "{:,}".format(total_filtrado).replace(",", ".") }} resultados (limite {{ limite }}).</p>
+  <p class="text-muted" style="font-size:.85rem;">Mostrando {{ linhas|length }} de {{ "{:,}".format(total_filtrado).replace(",", ".") }} resultados (limite {{ limite }}).</p>
 
   <div class="table-responsive" style="max-height: 70vh;">
     <table class="table table-striped table-sm dataTable">
