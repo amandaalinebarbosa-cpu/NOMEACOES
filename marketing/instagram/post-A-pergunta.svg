@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"  style="stop-color:#1E3A2A"/>
+      <stop offset="100%" style="stop-color:#142821"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0"  style="stop-color:#B8941F;stop-opacity:.4"/>
+      <stop offset=".5" style="stop-color:#D4AB2D"/>
+      <stop offset="1"  style="stop-color:#B8941F;stop-opacity:.4"/>
+    </linearGradient>
+    <pattern id="dots" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#B8941F" opacity="0.06"/>
+    </pattern>
+  </defs>
+
+  <rect width="1080" height="1080" fill="url(#bg)"/>
+  <rect width="1080" height="1080" fill="url(#dots)"/>
+  <rect x="0" y="0" width="1080" height="6" fill="url(#gold)"/>
+  <rect x="0" y="1074" width="1080" height="6" fill="url(#gold)"/>
+
+  <!-- Mini brand topo -->
+  <g transform="translate(80, 90)">
+    <circle cx="30" cy="30" r="26" fill="none" stroke="#B8941F" stroke-width="2"/>
+    <text x="30" y="38" text-anchor="middle" font-family="Georgia, serif" font-size="22" font-weight="700" fill="#B8941F">PD</text>
+    <text x="78" y="25" font-family="Georgia, serif" font-size="22" font-weight="700" fill="#ffffff">PERITUS DOMINUS</text>
+    <text x="78" y="46" font-family="Arial, sans-serif" font-size="11" letter-spacing="3" fill="#B8941F">NOMEAÇÕES SIGEO</text>
+  </g>
+
+  <!-- Pergunta grande -->
+  <text x="80" y="340" font-family="Georgia, serif" font-size="72" font-weight="700" fill="#ffffff">Quantas vezes</text>
+  <text x="80" y="420" font-family="Georgia, serif" font-size="72" font-weight="700" fill="#ffffff">esse perito</text>
+  <text x="80" y="500" font-family="Georgia, serif" font-size="72" font-weight="700" fill="#ffffff">já foi</text>
+  <text x="80" y="580" font-family="Georgia, serif" font-size="72" font-weight="700" fill="#B8941F">nomeado?</text>
+
+  <!-- Linha divisória dourada -->
+  <line x1="80" y1="640" x2="300" y2="640" stroke="#B8941F" stroke-width="2"/>
+
+  <!-- Resposta -->
+  <text x="80" y="700" font-family="Arial, sans-serif" font-size="24" fill="#E8E3D0">Na mão: <tspan font-weight="700">1 hora</tspan>.</text>
+  <text x="80" y="738" font-family="Arial, sans-serif" font-size="24" fill="#E8E3D0">No Peritus Dominus: <tspan font-weight="700" fill="#B8941F">10 segundos</tspan>.</text>
+
+  <!-- Caixa inferior -->
+  <rect x="80" y="800" width="920" height="200" rx="12" fill="rgba(184,148,31,0.08)" stroke="#B8941F" stroke-width="1" opacity="0.9"/>
+
+  <text x="110" y="850" font-family="Arial, sans-serif" font-size="12" letter-spacing="3" fill="#B8941F">ACESSE</text>
+  <text x="110" y="890" font-family="Arial, sans-serif" font-size="22" fill="#ffffff" font-weight="600">peritusdominus.com.br/nomeacoes</text>
+
+  <text x="110" y="940" font-family="Arial, sans-serif" font-size="12" letter-spacing="3" fill="#B8941F">INVESTIMENTO</text>
+  <text x="110" y="978" font-family="Georgia, serif" font-size="36" font-weight="700" fill="#ffffff">R$ 29<tspan font-size="18" font-weight="400" fill="#E8E3D0">/mês · sem fidelidade</tspan></text>
+</svg>

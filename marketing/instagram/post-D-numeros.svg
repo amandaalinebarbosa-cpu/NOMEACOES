@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"  style="stop-color:#1E3A2A"/>
+      <stop offset="100%" style="stop-color:#142821"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0"  style="stop-color:#B8941F;stop-opacity:.4"/>
+      <stop offset=".5" style="stop-color:#D4AB2D"/>
+      <stop offset="1"  style="stop-color:#B8941F;stop-opacity:.4"/>
+    </linearGradient>
+    <pattern id="dots" x="0" y="0" width="50" height="50" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#B8941F" opacity="0.06"/>
+    </pattern>
+  </defs>
+
+  <rect width="1080" height="1080" fill="url(#bg)"/>
+  <rect width="1080" height="1080" fill="url(#dots)"/>
+  <rect x="0" y="0" width="1080" height="6" fill="url(#gold)"/>
+  <rect x="0" y="1074" width="1080" height="6" fill="url(#gold)"/>
+
+  <!-- brand topo -->
+  <g transform="translate(80, 90)">
+    <circle cx="30" cy="30" r="26" fill="none" stroke="#B8941F" stroke-width="2"/>
+    <text x="30" y="38" text-anchor="middle" font-family="Georgia, serif" font-size="22" font-weight="700" fill="#B8941F">PD</text>
+    <text x="78" y="25" font-family="Georgia, serif" font-size="22" font-weight="700" fill="#ffffff">PERITUS DOMINUS</text>
+    <text x="78" y="46" font-family="Arial, sans-serif" font-size="11" letter-spacing="3" fill="#B8941F">NOMEAÇÕES SIGEO</text>
+  </g>
+
+  <!-- Título -->
+  <text x="540" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" letter-spacing="4" fill="#B8941F" font-weight="600">O QUE CABE NUM PAINEL ÚNICO</text>
+  <line x1="440" y1="245" x2="640" y2="245" stroke="#B8941F" stroke-width="1" opacity=".6"/>
+
+  <!-- Números em grid 2x3 -->
+  <g transform="translate(80, 290)">
+
+    <g transform="translate(0, 0)">
+      <text x="460" y="80" text-anchor="middle" font-family="Georgia, serif" font-size="80" font-weight="700" fill="#ffffff">3.044.074</text>
+      <text x="460" y="110" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" letter-spacing="3" fill="#B8941F" font-weight="600">NOMEAÇÕES REGISTRADAS</text>
+    </g>
+
+    <line x1="150" y1="160" x2="770" y2="160" stroke="#B8941F" stroke-width="1" opacity=".3"/>
+
+    <g transform="translate(0, 190)">
+      <text x="230" y="80" text-anchor="middle" font-family="Georgia, serif" font-size="80" font-weight="700" fill="#B8941F">24</text>
+      <text x="230" y="110" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" letter-spacing="3" fill="#E8E3D0" font-weight="600">TRIBUNAIS DO</text>
+      <text x="230" y="128" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" letter-spacing="3" fill="#E8E3D0" font-weight="600">TRABALHO</text>
+
+      <line x1="460" y1="20" x2="460" y2="120" stroke="#B8941F" stroke-width="1" opacity=".3"/>
+
+      <text x="690" y="80" text-anchor="middle" font-family="Georgia, serif" font-size="80" font-weight="700" fill="#ffffff">82.519</text>
+      <text x="690" y="110" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" letter-spacing="3" fill="#E8E3D0" font-weight="600">PROFISSIONAIS</text>
+    </g>
+
+    <line x1="150" y1="350" x2="770" y2="350" stroke="#B8941F" stroke-width="1" opacity=".3"/>
+
+    <g transform="translate(0, 380)">
+      <text x="230" y="80" text-anchor="middle" font-family="Georgia, serif" font-size="60" font-weight="700" fill="#ffffff">R$ 2,1 Bi</text>
+      <text x="230" y="110" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" letter-spacing="3" fill="#E8E3D0" font-weight="600">EM HONORÁRIOS</text>
+
+      <line x1="460" y1="20" x2="460" y2="120" stroke="#B8941F" stroke-width="1" opacity=".3"/>
+
+      <text x="690" y="80" text-anchor="middle" font-family="Georgia, serif" font-size="60" font-weight="700" fill="#B8941F">desde</text>
+      <text x="690" y="130" text-anchor="middle" font-family="Georgia, serif" font-size="60" font-weight="700" fill="#B8941F">2015</text>
+    </g>
+  </g>
+
+  <!-- CTA -->
+  <text x="540" y="900" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" letter-spacing="3" fill="#B8941F" font-weight="600">PESQUISA EM SEGUNDOS · R$ 29/MÊS</text>
+  <text x="540" y="970" text-anchor="middle" font-family="Georgia, serif" font-size="32" font-weight="700" fill="#ffffff">peritusdominus.com.br/nomeacoes</text>
+</svg>
