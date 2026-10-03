@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peritus Dominus — Nomeações SIGEO</title>
+<meta name="description" content="O maior painel de nomeações judiciais da Justiça do Trabalho. Pesquise peritos, varas, tribunais, gere relatórios em Excel e PDF.">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pd-navy:  #1E3A2A;
+    --pd-navy2: #142821;
+    --pd-gold:  #B8941F;
+    --pd-green: #16A34A;
+    --pd-green2:#0F7A37;
+    --pd-cream: #F5F0E6;
+    --pd-ink:   #2C2C2C;
+    --pd-mute:  #8B8477;
+    --pd-line:  #E9E4D6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--pd-cream); color: var(--pd-ink); scroll-behavior: smooth; }
+  body { font-family: 'Inter', system-ui, sans-serif; line-height: 1.6; }
+  h1, h2, h3, .brand { font-family: 'Cormorant Garamond', 'Times New Roman', serif; letter-spacing: .5px; line-height: 1.15; }
+  a { color: var(--pd-navy); }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, var(--pd-navy) 0%, var(--pd-navy2) 100%);
+    color: #fff; padding: 20px 32px;
+    border-bottom: 3px solid var(--pd-gold);
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .brand { font-size: 1.6rem; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+  .brand .seal {
+    width: 40px; height: 40px; border: 2px solid var(--pd-gold);
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%; color: var(--pd-gold); font-weight: 700;
+  }
+  .brand small { color: var(--pd-gold); font-size: .7rem; letter-spacing: 2px; text-transform: uppercase; font-family: 'Inter', sans-serif; font-weight: 500; display: block; margin-top: 2px; }
+  nav a { color: #fff; text-decoration: none; margin-left: 20px; font-weight: 500; opacity: .9; }
+  nav a:hover { color: var(--pd-gold); opacity: 1; }
+
+  /* HERO */
+  .hero { padding: 70px 32px 50px; max-width: 1100px; margin: 0 auto; text-align: center; }
+  .badge-hero {
+    display: inline-block; background: var(--pd-navy); color: var(--pd-gold);
+    padding: 7px 18px; border-radius: 24px; font-size: .78rem;
+    letter-spacing: 1.5px; text-transform: uppercase; font-weight: 600; margin-bottom: 20px;
+  }
+  .hero h1 { font-size: 3.5rem; color: var(--pd-navy); margin-bottom: 16px; font-weight: 700; }
+  .hero h1 .gold { color: var(--pd-gold); }
+  .hero p.lead { font-size: 1.2rem; color: var(--pd-mute); max-width: 720px; margin: 0 auto 36px; }
+
+  .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 14px 32px; border-radius: 6px; font-weight: 600;
+    text-decoration: none; font-size: 1rem; border: 0; cursor: pointer;
+    transition: all .2s; letter-spacing: .3px;
+  }
+  .btn-primary { background: var(--pd-green); color: #fff; box-shadow: 0 2px 10px rgba(22,163,74,.3); }
+  .btn-primary:hover { background: var(--pd-green2); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(22,163,74,.4); }
+  .btn-outline { background: transparent; color: var(--pd-navy); border: 1.5px solid var(--pd-navy); }
+  .btn-outline:hover { background: var(--pd-navy); color: #fff; }
+  .btn-gold { background: var(--pd-gold); color: var(--pd-navy); }
+  .btn-gold:hover { background: #d4ab2d; }
+
+  .hero .price-note { color: var(--pd-mute); font-size: .9rem; }
+
+  /* STATS */
+  .stats-strip {
+    background: #fff; padding: 36px 32px;
+    border-top: 1px solid var(--pd-line); border-bottom: 1px solid var(--pd-line);
+  }
+  .stats-grid { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; text-align: center; }
+  .stat .num { font-family: 'Cormorant Garamond', serif; font-size: 2.6rem; color: var(--pd-navy); font-weight: 700; line-height: 1; }
+  .stat .lbl { color: var(--pd-mute); font-size: .75rem; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; margin-top: 6px; }
+  .stat .gold { color: var(--pd-gold); }
+
+  /* FEATURES */
+  .section { padding: 70px 32px; max-width: 1100px; margin: 0 auto; }
+  .section-head { text-align: center; margin-bottom: 50px; }
+  .section-head .over { color: var(--pd-gold); font-size: .78rem; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; margin-bottom: 8px; }
+  .section-head h2 { font-size: 2.4rem; color: var(--pd-navy); }
+
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .feat {
+    background: #fff; padding: 28px; border-radius: 10px;
+    border-top: 3px solid var(--pd-gold);
+    box-shadow: 0 1px 4px rgba(30,58,42,.08);
+  }
+  .feat .ico { font-size: 1.8rem; margin-bottom: 12px; }
+  .feat h3 { font-size: 1.3rem; color: var(--pd-navy); margin-bottom: 8px; }
+  .feat p { color: var(--pd-mute); font-size: .95rem; }
+
+  /* PLANO */
+  .plano-wrap { padding: 60px 32px; background: var(--pd-navy); color: #fff; }
+  .plano-card {
+    max-width: 480px; margin: 0 auto; background: #fff; color: var(--pd-ink);
+    border-radius: 12px; padding: 44px 40px;
+    border-top: 4px solid var(--pd-gold);
+    box-shadow: 0 10px 40px rgba(0,0,0,.2);
+  }
+  .plano-card .nome { color: var(--pd-gold); font-size: .78rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
+  .plano-card .preco { font-family: 'Cormorant Garamond', serif; font-size: 4rem; color: var(--pd-navy); font-weight: 700; line-height: 1; margin: 10px 0 4px; }
+  .plano-card .preco small { font-size: 1.1rem; color: var(--pd-mute); font-family: 'Inter', sans-serif; font-weight: 400; }
+  .plano-card ul { list-style: none; margin: 24px 0; }
+  .plano-card ul li {
+    padding: 10px 0; padding-left: 28px; position: relative;
+    border-bottom: 1px solid var(--pd-line); font-size: .95rem;
+  }
+  .plano-card ul li::before {
+    content: "✓"; color: var(--pd-green); position: absolute; left: 0;
+    font-weight: 700; font-size: 1.1rem;
+  }
+  .plano-card .btn { width: 100%; justify-content: center; margin-top: 10px; }
+
+  /* FOOTER */
+  footer {
+    background: var(--pd-navy2); color: #c9c3b2; padding: 36px 32px;
+    text-align: center; font-size: .85rem; border-top: 3px solid var(--pd-gold);
+  }
+  footer .brand-foot { font-family: 'Cormorant Garamond', serif; color: #fff; font-size: 1.4rem; margin-bottom: 6px; }
+  footer .brand-foot .gold { color: var(--pd-gold); }
+  footer a { color: var(--pd-gold); text-decoration: none; }
+
+  /* MOBILE */
+  @media (max-width: 768px) {
+    header { padding: 14px 20px; flex-direction: column; gap: 10px; }
+    nav a { margin: 0 8px; }
+    .hero { padding: 50px 20px; }
+    .hero h1 { font-size: 2.3rem; }
+    .hero p.lead { font-size: 1rem; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .features { grid-template-columns: 1fr; }
+    .plano-card { padding: 30px 24px; }
+    .plano-card .preco { font-size: 3rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="seal">PD</span>
+    <div>Peritus Dominus
+      <small>Nomeações SIGEO</small>
+    </div>
+  </div>
+  <nav>
+    <a href="/">← Voltar ao site</a>
+    <a href="#plano">Planos</a>
+    <a href="https://peso-unbaked-hydrogen.ngrok-free.dev" target="_blank">Entrar</a>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <span class="badge-hero">★ Inteligência Pericial</span>
+  <h1>O maior painel de <span class="gold">nomeações judiciais</span> da Justiça do Trabalho</h1>
+  <p class="lead">
+    Mais de 3 milhões de nomeações em todos os 24 TRTs, atualizadas mensalmente.
+    Busque qualquer perito, qualquer vara, qualquer processo. Baixe relatórios formatados
+    em Excel e PDF para seus laudos, propostas e processos.
+  </p>
+  <div class="cta-row">
+    <a href="#plano" class="btn btn-primary">Assinar — R$ 29/mês</a>
+    <a href="https://peso-unbaked-hydrogen.ngrok-free.dev" target="_blank" class="btn btn-outline">Já sou assinante → Entrar</a>
+  </div>
+  <p class="price-note">Sem fidelidade · Cancele quando quiser · Pix, boleto ou cartão</p>
+</section>
+
+<!-- STATS -->
+<section class="stats-strip">
+  <div class="stats-grid">
+    <div class="stat"><div class="num">3M+</div><div class="lbl">Nomeações no banco</div></div>
+    <div class="stat"><div class="num gold">24</div><div class="lbl">Tribunais TRT</div></div>
+    <div class="stat"><div class="num">15k+</div><div class="lbl">Peritos cadastrados</div></div>
+    <div class="stat"><div class="num gold">2015+</div><div class="lbl">Histórico desde</div></div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section">
+  <div class="section-head">
+    <div class="over">O que você vai ter</div>
+    <h2>Tudo em um só painel</h2>
+  </div>
+  <div class="features">
+    <div class="feat">
+      <div class="ico">🔍</div>
+      <h3>Busca ilimitada</h3>
+      <p>Pesquise qualquer perito pelo nome, qualquer processo, qualquer vara em qualquer estado. Resultados instantâneos.</p>
+    </div>
+    <div class="feat">
+      <div class="ico">📊</div>
+      <h3>Dashboards analíticos</h3>
+      <p>Gráficos de evolução mensal, ranking de profissionais, varas mais ativas, distribuição por tribunal e por profissão.</p>
+    </div>
+    <div class="feat">
+      <div class="ico">📄</div>
+      <h3>Relatórios em PDF</h3>
+      <p>Gere relatórios formatados com cabeçalho oficial, gráficos e tabelas prontos para anexar em laudos e processos.</p>
+    </div>
+    <div class="feat">
+      <div class="ico">📥</div>
+      <h3>Exportação em Excel</h3>
+      <p>Baixe planilhas .xlsx formatadas com filtros aplicados, pronto para abrir no Excel ou Google Sheets.</p>
+    </div>
+    <div class="feat">
+      <div class="ico">🔔</div>
+      <h3>Atualização mensal</h3>
+      <p>Base atualizada automaticamente todo mês com as novas nomeações, sem você fazer nada.</p>
+    </div>
+    <div class="feat">
+      <div class="ico">⚖️</div>
+      <h3>Dados oficiais</h3>
+      <p>Fonte: SIGEO/CNJ — Justiça do Trabalho. Todos os registros são públicos e verificáveis.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PLANO -->
+<section id="plano" class="plano-wrap">
+  <div class="plano-card">
+    <div class="nome">Plano Único</div>
+    <div class="preco">R$ 29<small>/mês</small></div>
+    <p style="color: var(--pd-mute); margin-top: 8px;">Acesso completo ao painel. Cancele quando quiser.</p>
+    <ul>
+      <li>Busca ilimitada de peritos e processos</li>
+      <li>Todos os 24 TRTs do Brasil</li>
+      <li>Dashboards e gráficos analíticos</li>
+      <li>Relatórios em PDF prontos para processo</li>
+      <li>Exportação em Excel e CSV</li>
+      <li>Atualização mensal automática</li>
+      <li>Login seguro com Google</li>
+    </ul>
+    <!-- TROQUE ESTE LINK pela URL do checkout da Kiwify quando ela estiver pronta -->
+    <a href="https://pay.kiwify.com.br/SEU_LINK_AQUI" class="btn btn-primary">
+      Começar agora — R$ 29/mês
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="brand-foot">Peritus <span class="gold">Dominus</span></div>
+  <div>A plataforma profissional do perito</div>
+  <div style="margin-top: 12px;">
+    <a href="https://www.peritusdominus.com.br">peritusdominus.com.br</a> ·
+    AASB Consultoria · CNPJ 57.091.187/0001-01
+  </div>
+</footer>
+
+</body>
+</html>
