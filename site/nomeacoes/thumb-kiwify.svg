@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <!-- fundo gradient verde -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1E3A2A"/>
+      <stop offset="100%" style="stop-color:#142821"/>
+    </linearGradient>
+    <linearGradient id="goldBar" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"  style="stop-color:#B8941F;stop-opacity:0.6"/>
+      <stop offset="50%" style="stop-color:#D4AB2D;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#B8941F;stop-opacity:0.6"/>
+    </linearGradient>
+    <pattern id="dots" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#B8941F" opacity="0.08"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#dots)"/>
+
+  <!-- barra dourada top -->
+  <rect x="0" y="0" width="1200" height="6" fill="url(#goldBar)"/>
+
+  <!-- selo PD circular -->
+  <g transform="translate(140, 150)">
+    <circle cx="60" cy="60" r="56" fill="none" stroke="#B8941F" stroke-width="3"/>
+    <circle cx="60" cy="60" r="48" fill="none" stroke="#B8941F" stroke-width="1" opacity="0.5"/>
+    <text x="60" y="78" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif"
+          font-size="48" font-weight="700" fill="#B8941F">PD</text>
+  </g>
+
+  <!-- titulo principal -->
+  <text x="300" y="190" font-family="'Cormorant Garamond', Georgia, serif"
+        font-size="86" font-weight="700" fill="#FFFFFF">PERITUS</text>
+  <text x="300" y="275" font-family="'Cormorant Garamond', Georgia, serif"
+        font-size="86" font-weight="700" fill="#B8941F">DOMINUS</text>
+
+  <!-- subtitulo -->
+  <line x1="300" y1="305" x2="500" y2="305" stroke="#B8941F" stroke-width="2"/>
+  <text x="300" y="340" font-family="'Inter', Arial, sans-serif"
+        font-size="22" letter-spacing="6" fill="#B8941F" font-weight="500">NOMEAÇÕES SIGEO</text>
+
+  <!-- descrição -->
+  <text x="300" y="405" font-family="'Inter', Arial, sans-serif"
+        font-size="26" fill="#E8E3D0" font-weight="400">O maior painel de nomeações judiciais</text>
+  <text x="300" y="440" font-family="'Inter', Arial, sans-serif"
+        font-size="26" fill="#E8E3D0" font-weight="400">da Justiça do Trabalho</text>
+
+  <!-- stats inline -->
+  <g transform="translate(300, 490)">
+    <text x="0" y="0" font-family="'Cormorant Garamond', Georgia, serif"
+          font-size="42" font-weight="700" fill="#FFFFFF">3M+</text>
+    <text x="0" y="25" font-family="'Inter', Arial, sans-serif"
+          font-size="12" fill="#8B8477" letter-spacing="2">NOMEAÇÕES</text>
+
+    <text x="180" y="0" font-family="'Cormorant Garamond', Georgia, serif"
+          font-size="42" font-weight="700" fill="#B8941F">24</text>
+    <text x="180" y="25" font-family="'Inter', Arial, sans-serif"
+          font-size="12" fill="#8B8477" letter-spacing="2">TRIBUNAIS</text>
+
+    <text x="320" y="0" font-family="'Cormorant Garamond', Georgia, serif"
+          font-size="42" font-weight="700" fill="#FFFFFF">15k+</text>
+    <text x="320" y="25" font-family="'Inter', Arial, sans-serif"
+          font-size="12" fill="#8B8477" letter-spacing="2">PERITOS</text>
+
+    <text x="500" y="0" font-family="'Cormorant Garamond', Georgia, serif"
+          font-size="42" font-weight="700" fill="#B8941F">R$29</text>
+    <text x="500" y="25" font-family="'Inter', Arial, sans-serif"
+          font-size="12" fill="#8B8477" letter-spacing="2">/MÊS</text>
+  </g>
+
+  <!-- barra dourada bottom -->
+  <rect x="0" y="624" width="1200" height="6" fill="url(#goldBar)"/>
+
+  <!-- selo canto superior direito -->
+  <g transform="translate(1050, 100)" opacity="0.9">
+    <rect x="-70" y="-20" width="140" height="40" rx="20" fill="none" stroke="#B8941F" stroke-width="1.5"/>
+    <text x="0" y="7" text-anchor="middle" font-family="'Inter', Arial, sans-serif"
+          font-size="13" fill="#B8941F" letter-spacing="2" font-weight="600">INTELIGÊNCIA PERICIAL</text>
+  </g>
+</svg>
