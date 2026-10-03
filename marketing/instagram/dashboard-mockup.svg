@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <defs>
+    <linearGradient id="header" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"  style="stop-color:#1E3A2A"/>
+      <stop offset="100%" style="stop-color:#142821"/>
+    </linearGradient>
+    <linearGradient id="goldBar" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0"  style="stop-color:#B8941F;stop-opacity:0.5"/>
+      <stop offset=".5" style="stop-color:#D4AB2D"/>
+      <stop offset="1"  style="stop-color:#B8941F;stop-opacity:0.5"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.1"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1080" height="1080" fill="#F5F0E6"/>
+
+  <!-- Device/browser frame -->
+  <rect x="30" y="40" width="1020" height="1000" rx="16" fill="#ffffff" filter="url(#shadow)"/>
+  <!-- Browser chrome -->
+  <rect x="30" y="40" width="1020" height="34" rx="16" fill="#E9E4D6"/>
+  <rect x="30" y="60" width="1020" height="14" fill="#E9E4D6"/>
+  <circle cx="52" cy="57" r="5" fill="#E05C56"/>
+  <circle cx="70" cy="57" r="5" fill="#E8A33D"/>
+  <circle cx="88" cy="57" r="5" fill="#6CBE4A"/>
+  <rect x="140" y="48" width="700" height="20" rx="10" fill="#F5F0E6"/>
+  <text x="160" y="62" font-family="Arial, sans-serif" font-size="12" fill="#8B8477">🔒 www.peritusdominus.com.br/nomeacoes</text>
+
+  <!-- APP HEADER (navy) -->
+  <rect x="30" y="74" width="1020" height="86" fill="url(#header)"/>
+  <rect x="30" y="156" width="1020" height="4" fill="url(#goldBar)"/>
+
+  <!-- Selo PD -->
+  <circle cx="78" cy="117" r="22" fill="none" stroke="#B8941F" stroke-width="2"/>
+  <text x="78" y="124" text-anchor="middle" font-family="Georgia, serif" font-size="20" font-weight="700" fill="#B8941F">PD</text>
+
+  <!-- Nome -->
+  <text x="118" y="112" font-family="Georgia, serif" font-size="24" font-weight="700" fill="#ffffff">Peritus Dominus</text>
+  <text x="118" y="132" font-family="Arial, sans-serif" font-size="10" fill="#B8941F" letter-spacing="2">NOMEAÇÕES SIGEO · JUSTIÇA DO TRABALHO</text>
+
+  <!-- Nav -->
+  <text x="700" y="125" font-family="Arial, sans-serif" font-size="12" fill="#ffffff" opacity="0.85">Tabela</text>
+  <text x="755" y="125" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#B8941F">Dashboard</text>
+  <text x="840" y="125" font-family="Arial, sans-serif" font-size="12" fill="#ffffff" opacity="0.85">Excel</text>
+  <rect x="890" y="107" width="130" height="30" rx="4" fill="#B8941F"/>
+  <text x="955" y="127" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#1E3A2A">📄 RELATÓRIO PDF</text>
+
+  <!-- KPI CARDS -->
+  <g transform="translate(60, 190)">
+    <!-- Card 1 -->
+    <rect x="0" y="0" width="235" height="100" rx="8" fill="#ffffff" stroke="#E9E4D6"/>
+    <rect x="0" y="0" width="235" height="3" fill="#B8941F"/>
+    <text x="18" y="30" font-family="Arial, sans-serif" font-size="9" fill="#8B8477" letter-spacing="1.5">NOMEAÇÕES</text>
+    <text x="18" y="75" font-family="Georgia, serif" font-size="34" font-weight="700" fill="#1E3A2A">3.044.074</text>
+
+    <!-- Card 2 -->
+    <rect x="248" y="0" width="235" height="100" rx="8" fill="#ffffff" stroke="#E9E4D6"/>
+    <rect x="248" y="0" width="235" height="3" fill="#B8941F"/>
+    <text x="266" y="30" font-family="Arial, sans-serif" font-size="9" fill="#8B8477" letter-spacing="1.5">PROFISSIONAIS</text>
+    <text x="266" y="75" font-family="Georgia, serif" font-size="34" font-weight="700" fill="#1E3A2A">82.519</text>
+
+    <!-- Card 3 -->
+    <rect x="496" y="0" width="235" height="100" rx="8" fill="#ffffff" stroke="#E9E4D6"/>
+    <rect x="496" y="0" width="235" height="3" fill="#B8941F"/>
+    <text x="514" y="30" font-family="Arial, sans-serif" font-size="9" fill="#8B8477" letter-spacing="1.5">TRIBUNAIS</text>
+    <text x="514" y="75" font-family="Georgia, serif" font-size="34" font-weight="700" fill="#1E3A2A">24</text>
+
+    <!-- Card 4 -->
+    <rect x="744" y="0" width="235" height="100" rx="8" fill="#ffffff" stroke="#E9E4D6"/>
+    <rect x="744" y="0" width="235" height="3" fill="#B8941F"/>
+    <text x="762" y="30" font-family="Arial, sans-serif" font-size="9" fill="#8B8477" letter-spacing="1.5">VALOR TOTAL</text>
+    <text x="762" y="75" font-family="Georgia, serif" font-size="32" font-weight="700" fill="#1E3A2A">R$ 2,1 Bi</text>
+  </g>
+
+  <!-- CHART 1 - mensal line -->
+  <g transform="translate(60, 320)">
+    <rect x="0" y="0" width="620" height="300" rx="8" fill="#ffffff" stroke="#E9E4D6"/>
+    <text x="20" y="30" font-family="Georgia, serif" font-size="18" font-weight="700" fill="#1E3A2A">Nomeações por mês</text>
+    <line x1="20" y1="48" x2="600" y2="48" stroke="#E9E4D6"/>
+
+    <!-- Grid -->
+    <line x1="40" y1="80" x2="600" y2="80" stroke="#F5F0E6"/>
+    <line x1="40" y1="140" x2="600" y2="140" stroke="#F5F0E6"/>
+    <line x1="40" y1="200" x2="600" y2="200" stroke="#F5F0E6"/>
+    <line x1="40" y1="260" x2="600" y2="260" stroke="#E9E4D6"/>
+
+    <!-- Line path -->
+    <path d="M 50 220 L 100 200 L 150 185 L 200 175 L 250 160 L 300 150 L 350 130 L 400 120 L 450 105 L 500 95 L 550 90 L 590 80"
+          fill="none" stroke="#1E3A2A" stroke-width="2.5"/>
+    <!-- Area under -->
+    <path d="M 50 220 L 100 200 L 150 185 L 200 175 L 250 160 L 300 150 L 350 130 L 400 120 L 450 105 L 500 95 L 550 90 L 590 80 L 590 260 L 50 260 Z"
+          fill="#1E3A2A" opacity="0.1"/>
+    <!-- Dots -->
+    <circle cx="50"  cy="220" r="4" fill="#B8941F"/>
+    <circle cx="200" cy="175" r="4" fill="#B8941F"/>
+    <circle cx="350" cy="130" r="4" fill="#B8941F"/>
+    <circle cx="500" cy="95"  r="4" fill="#B8941F"/>
+    <circle cx="590" cy="80"  r="4" fill="#B8941F"/>
+
+    <text x="40"  y="280" font-family="Arial, sans-serif" font-size="9" fill="#8B8477">2022</text>
+    <text x="190" y="280" font-family="Arial, sans-serif" font-size="9" fill="#8B8477">2023</text>
+    <text x="340" y="280" font-family="Arial, sans-serif" font-size="9" fill="#8B8477">2024</text>
+    <text x="490" y="280" font-family="Arial, sans-serif" font-size="9" fill="#8B8477">2025</text>
+    <text x="570" y="280" font-family="Arial, sans-serif" font-size="9" fill="#8B8477">2026</text>
+  </g>
+
+  <!-- CHART 2 - doughnut -->
+  <g transform="translate(700, 320)">
+    <rect x="0" y="0" width="279" height="300" rx="8" fill="#ffffff" stroke="#E9E4D6"/>
+    <text x="20" y="30" font-family="Georgia, serif" font-size="18" font-weight="700" fill="#1E3A2A">Por situação</text>
+    <line x1="20" y1="48" x2="259" y2="48" stroke="#E9E4D6"/>
+
+    <!-- Donut -->
+    <circle cx="139" cy="180" r="70" fill="none" stroke="#F5F0E6" stroke-width="22"/>
+    <circle cx="139" cy="180" r="70" fill="none" stroke="#1E3A2A" stroke-width="22"
+            stroke-dasharray="220 220" transform="rotate(-90 139 180)"/>
+    <circle cx="139" cy="180" r="70" fill="none" stroke="#B8941F" stroke-width="22"
+            stroke-dasharray="110 440" transform="rotate(60 139 180)"/>
+    <circle cx="139" cy="180" r="70" fill="none" stroke="#16A34A" stroke-width="22"
+            stroke-dasharray="55 440" transform="rotate(130 139 180)"/>
+
+    <text x="139" y="178" text-anchor="middle" font-family="Georgia, serif" font-size="22" font-weight="700" fill="#1E3A2A">66%</text>
+    <text x="139" y="195" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#8B8477">ACEITA</text>
+  </g>
+
+  <!-- TABELA (resumo) -->
+  <g transform="translate(60, 650)">
+    <rect x="0" y="0" width="920" height="320" rx="8" fill="#ffffff" stroke="#E9E4D6"/>
+    <text x="20" y="30" font-family="Georgia, serif" font-size="18" font-weight="700" fill="#1E3A2A">Top profissionais mais nomeados</text>
+    <line x1="20" y1="48" x2="900" y2="48" stroke="#E9E4D6"/>
+
+    <!-- Table header -->
+    <rect x="20" y="56" width="880" height="28" fill="#1E3A2A"/>
+    <text x="40"  y="74" font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" letter-spacing="1">PROFISSIONAL</text>
+    <text x="400" y="74" font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" letter-spacing="1">PROFISSÃO</text>
+    <text x="620" y="74" font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" letter-spacing="1">TRT</text>
+    <text x="700" y="74" font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" letter-spacing="1">NOMEAÇÕES</text>
+    <text x="820" y="74" font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" letter-spacing="1">R$ TOTAL</text>
+
+    <!-- Rows anonimizadas -->
+    <g font-family="Arial, sans-serif" font-size="12" fill="#2C2C2C">
+      <rect x="20" y="84" width="880" height="26" fill="#FAFAF5"/>
+      <text x="40" y="101">A****** M****** R****** S****</text>
+      <text x="400" y="101">Engenheiro Civil</text>
+      <text x="620" y="101">TRT2</text>
+      <text x="700" y="101" font-weight="700">1.247</text>
+      <text x="820" y="101" fill="#1E3A2A" font-weight="600">R$ 1,8M</text>
+
+      <rect x="20" y="110" width="880" height="26" fill="#ffffff"/>
+      <text x="40" y="127">J*** C***** F******** S******</text>
+      <text x="400" y="127">Médico do Trabalho</text>
+      <text x="620" y="127">TRT4</text>
+      <text x="700" y="127" font-weight="700">1.089</text>
+      <text x="820" y="127" fill="#1E3A2A" font-weight="600">R$ 1,5M</text>
+
+      <rect x="20" y="136" width="880" height="26" fill="#FAFAF5"/>
+      <text x="40" y="153">R****** O****** C******</text>
+      <text x="400" y="153">Contador</text>
+      <text x="620" y="153">TRT15</text>
+      <text x="700" y="153" font-weight="700">974</text>
+      <text x="820" y="153" fill="#1E3A2A" font-weight="600">R$ 1,2M</text>
+
+      <rect x="20" y="162" width="880" height="26" fill="#ffffff"/>
+      <text x="40" y="179">P****** F******** G*****</text>
+      <text x="400" y="179">Engenheiro de Segurança</text>
+      <text x="620" y="179">TRT3</text>
+      <text x="700" y="179" font-weight="700">886</text>
+      <text x="820" y="179" fill="#1E3A2A" font-weight="600">R$ 1,1M</text>
+
+      <rect x="20" y="188" width="880" height="26" fill="#FAFAF5"/>
+      <text x="40" y="205">M***** L****** V****** A********</text>
+      <text x="400" y="205">Psicólogo</text>
+      <text x="620" y="205">TRT1</text>
+      <text x="700" y="205" font-weight="700">812</text>
+      <text x="820" y="205" fill="#1E3A2A" font-weight="600">R$ 946k</text>
+
+      <rect x="20" y="214" width="880" height="26" fill="#ffffff"/>
+      <text x="40" y="231">C****** R****** D******</text>
+      <text x="400" y="231">Engenheiro Civil</text>
+      <text x="620" y="231">TRT12</text>
+      <text x="700" y="231" font-weight="700">777</text>
+      <text x="820" y="231" fill="#1E3A2A" font-weight="600">R$ 892k</text>
+
+      <rect x="20" y="240" width="880" height="26" fill="#FAFAF5"/>
+      <text x="40" y="257">S****** M****** B****** J*****</text>
+      <text x="400" y="257">Médico do Trabalho</text>
+      <text x="620" y="257">TRT9</text>
+      <text x="700" y="257" font-weight="700">741</text>
+      <text x="820" y="257" fill="#1E3A2A" font-weight="600">R$ 821k</text>
+
+      <rect x="20" y="266" width="880" height="26" fill="#ffffff"/>
+      <text x="40" y="283">F******** H****** C***** L****</text>
+      <text x="400" y="283">Contador</text>
+      <text x="620" y="283">TRT6</text>
+      <text x="700" y="283" font-weight="700">695</text>
+      <text x="820" y="283" fill="#1E3A2A" font-weight="600">R$ 788k</text>
+
+      <rect x="20" y="292" width="880" height="26" fill="#FAFAF5" opacity="0.5"/>
+      <text x="440" y="309" font-family="Arial, sans-serif" font-size="10" fill="#8B8477" font-style="italic" text-anchor="middle">· nomes anonimizados nesta prévia ·</text>
+    </g>
+  </g>
+
+  <!-- Rodapé marca -->
+  <rect x="30" y="1036" width="1020" height="4" fill="url(#goldBar)"/>
+</svg>
