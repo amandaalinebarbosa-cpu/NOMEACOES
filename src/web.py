@@ -997,24 +997,34 @@ import hashlib
 import json
 
 from flask import jsonify, abort, Response as _Resp, request as _req
+from dotenv import load_dotenv as _load_dotenv
 
 from . import assinaturas as _assin
 
-KIWIFY_WEBHOOK_TOKEN = os.environ.get("KIWIFY_WEBHOOK_TOKEN", "")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+# Garante que o .env está carregado (idempotente)
+_load_dotenv()
+
+
+def _get_admin_password() -> str:
+    return os.environ.get("ADMIN_PASSWORD", "")
+
+
+def _get_kiwify_token() -> str:
+    return os.environ.get("KIWIFY_WEBHOOK_TOKEN", "")
 
 
 def _valida_assinatura_kiwify(req) -> bool:
     """A Kiwify envia a assinatura HMAC-SHA1 na querystring (?signature=...).
     Se KIWIFY_WEBHOOK_TOKEN não estiver setado, aceita tudo (modo dev).
     """
-    if not KIWIFY_WEBHOOK_TOKEN:
+    token = _get_kiwify_token()
+    if not token:
         return True
     sig = req.args.get("signature") or req.headers.get("X-Kiwify-Signature") or ""
     if not sig:
         return False
     calc = hmac.new(
-        KIWIFY_WEBHOOK_TOKEN.encode("utf-8"),
+        token.encode("utf-8"),
         req.get_data(),
         hashlib.sha1,
     ).hexdigest()
@@ -1036,9 +1046,10 @@ def webhook_kiwify():
 
 def _check_admin():
     auth = _req.authorization
-    if not ADMIN_PASSWORD:
+    pwd = _get_admin_password()
+    if not pwd:
         abort(503, "ADMIN_PASSWORD não configurado no .env")
-    if not auth or auth.username != "admin" or auth.password != ADMIN_PASSWORD:
+    if not auth or auth.username != "admin" or auth.password != pwd:
         return _Resp(
             "Login necessário", 401,
             {"WWW-Authenticate": 'Basic realm="Peritus Admin"'},
