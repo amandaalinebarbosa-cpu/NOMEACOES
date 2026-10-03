@@ -257,6 +257,119 @@ def export():
     )
 
 
+@app.route("/export/xlsx")
+def export_xlsx():
+    """Exportação em Excel (.xlsx) formatada, com os mesmos filtros."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    where, params, filtros = _build_query(request.args)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Nomeações SIGEO"
+
+    # ---- cabeçalho Peritus Dominus ----
+    ws.merge_cells("A1:H1")
+    c = ws["A1"]
+    c.value = "PERITUS DOMINUS — Nomeações SIGEO"
+    c.font = Font(name="Calibri", size=16, bold=True, color="FFFFFF")
+    c.fill = PatternFill("solid", fgColor="1E3A2A")
+    c.alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[1].height = 28
+
+    ws.merge_cells("A2:H2")
+    c = ws["A2"]
+    c.value = f"Relatório emitido em {datetime.now():%d/%m/%Y %H:%M}"
+    c.font = Font(size=10, italic=True, color="595959")
+    c.alignment = Alignment(horizontal="center")
+
+    # resumo dos filtros aplicados
+    partes = []
+    if filtros.get("tribunal"): partes.append(f"Tribunal={filtros['tribunal']}")
+    if filtros.get("unidade"):  partes.append(f"Unidade={filtros['unidade']}")
+    if filtros.get("nome"):     partes.append(f"Perito={filtros['nome']}")
+    if filtros.get("profissao"):partes.append(f"Profissão={filtros['profissao']}")
+    if filtros.get("data_ini"): partes.append(f"De={filtros['data_ini']}")
+    if filtros.get("data_fim"): partes.append(f"Até={filtros['data_fim']}")
+    if filtros.get("validas") == "1": partes.append("Excluídas as CANCELADA")
+    ws.merge_cells("A3:H3")
+    ws["A3"].value = "Filtros: " + (" · ".join(partes) if partes else "nenhum")
+    ws["A3"].font = Font(size=9, color="8B8477")
+
+    # ---- cabeçalho da tabela ----
+    header_row = 5
+    headers = ["Data", "Tribunal", "Unidade", "Nome", "Profissão",
+               "Processo", "Valor (R$)", "Situação"]
+    for i, h in enumerate(headers, 1):
+        c = ws.cell(row=header_row, column=i, value=h)
+        c.font = Font(bold=True, color="FFFFFF", size=11)
+        c.fill = PatternFill("solid", fgColor="1E3A2A")
+        c.alignment = Alignment(horizontal="center", vertical="center")
+        c.border = Border(bottom=Side(style="medium", color="B8941F"))
+    ws.row_dimensions[header_row].height = 22
+
+    # ---- dados ----
+    thin = Side(style="thin", color="E9E4D6")
+    alt_fill = PatternFill("solid", fgColor="FAF8F2")
+    r = header_row + 1
+    total = 0
+    with db.connect() as conn, conn.cursor() as cur:
+        cur.execute(f"""
+            SELECT n.data_nomeacao, t.sigla, u.nome, p.nome, p.profissao,
+                   n.processo, n.valor, n.situacao
+              FROM nomeacao n
+              JOIN tribunal t     ON t.id = n.tribunal_id
+              JOIN unidade u      ON u.id = n.unidade_id
+              JOIN profissional p ON p.id = n.profissional_id
+              {where}
+             ORDER BY n.data_nomeacao DESC NULLS LAST
+        """, params)
+        for row in cur:
+            data_v, tribunal_v, unid_v, nome_v, prof_v, proc_v, valor_v, sit_v = row
+            cells = [
+                (data_v, "dd/mm/yyyy"),
+                (tribunal_v, None), (unid_v, None), (nome_v, None),
+                (prof_v, None), (proc_v, "@"),
+                (valor_v, '"R$ "#,##0.00'),
+                (sit_v, None),
+            ]
+            for col_i, (val, fmt) in enumerate(cells, 1):
+                cc = ws.cell(row=r, column=col_i, value=val)
+                if fmt: cc.number_format = fmt
+                cc.border = Border(left=thin, right=thin, top=thin, bottom=thin)
+                if r % 2 == 0: cc.fill = alt_fill
+            total += 1
+            r += 1
+
+    # ---- larguras ----
+    widths = [12, 10, 48, 36, 24, 24, 14, 20]
+    for i, w in enumerate(widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    ws.freeze_panes = ws.cell(row=header_row + 1, column=1)
+    ws.auto_filter.ref = f"A{header_row}:H{r-1 if r > header_row + 1 else header_row}"
+
+    # ---- rodapé com total ----
+    foot_row = r + 1
+    ws.merge_cells(start_row=foot_row, start_column=1, end_row=foot_row, end_column=5)
+    ws.cell(row=foot_row, column=1,
+            value=f"Total: {total:,} nomeações".replace(",", ".")
+            ).font = Font(bold=True, color="1E3A2A")
+    ws.cell(row=foot_row, column=1).alignment = Alignment(horizontal="right")
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return Response(
+        buf.getvalue(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition":
+                 f"attachment; filename=nomeacoes_{date.today():%Y%m%d}.xlsx"},
+    )
+
+
 DASH_TPL = """
 <!doctype html>
 <html lang="pt-br"><head>
@@ -267,12 +380,13 @@ DASH_TPL = """
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
   :root {
-    --pd-navy:  #1a2847;
-    --pd-navy2: #0f1a33;
-    --pd-gold:  #c9a961;
-    --pd-cream: #f6f3ec;
-    --pd-ink:   #2b2b2b;
-    --pd-mute:  #8b8477;
+    --pd-navy:  #1E3A2A;   /* verde escuro Peritus Dominus */
+    --pd-navy2: #142821;   /* verde ainda mais escuro */
+    --pd-gold:  #B8941F;   /* dourado DOMINUS */
+    --pd-green: #16A34A;   /* verde CTA */
+    --pd-cream: #F5F0E6;   /* bege fundo */
+    --pd-ink:   #2C2C2C;
+    --pd-mute:  #8B8477;
   }
   html, body { background: var(--pd-cream); color: var(--pd-ink); }
   body { font-family: 'Inter', system-ui, sans-serif; }
@@ -353,6 +467,7 @@ DASH_TPL = """
     <a href="/?{{ query_string }}">Tabela</a>
     <a href="/dashboard?{{ query_string }}">Dashboard</a>
     <a href="/export?{{ query_string }}">CSV</a>
+    <a href="/export/xlsx?{{ query_string }}">📊 Excel</a>
     <a href="/relatorio?{{ query_string }}" class="btn-print">📄 Gerar Relatório PDF</a>
   </nav>
 </header>
@@ -438,8 +553,8 @@ DASH_TPL = """
 </div>
 
 <script>
-const PD_NAVY = '#1a2847', PD_GOLD = '#c9a961', PD_NAVY2='#0f1a33';
-const cores = ['#1a2847','#c9a961','#2d4068','#8b7340','#4a5e85','#b8975a','#5c7098','#a68846','#2b3b5f','#7a6238','#394a73','#d6bb81','#1f3156','#9f864c','#536a94'];
+const PD_NAVY = '#1E3A2A', PD_GOLD = '#B8941F', PD_NAVY2='#142821', PD_GREEN='#16A34A';
+const cores = ['#1E3A2A','#B8941F','#16A34A','#2E5540','#8F6E17','#0F6E31','#426F57','#6B5110','#1C8440','#8D9B8E','#D4AB2D','#366B49','#A68125','#145731','#B29C5D'];
 Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
 Chart.defaults.color = '#2b2b2b';
 
@@ -587,49 +702,49 @@ RELATORIO_TPL = """
   .wrap { max-width: 190mm; margin: 0 auto; padding: 24px 16px; }
 
   .cabec { display: flex; justify-content: space-between; align-items: flex-start;
-           border-bottom: 2px solid #c9a961; padding-bottom: 14px; margin-bottom: 18px; }
-  .brand { font-size: 1.6rem; color: #1a2847; font-weight: 700; margin: 0; }
+           border-bottom: 2px solid #B8941F; padding-bottom: 14px; margin-bottom: 18px; }
+  .brand { font-size: 1.6rem; color: #1E3A2A; font-weight: 700; margin: 0; }
   .brand small { display: block; color: #8b8477; font-family: 'Inter', sans-serif;
                  font-size: .72rem; letter-spacing: 2px; text-transform: uppercase; font-weight: 500; }
   .meta { text-align: right; font-size: .78rem; color: #555; line-height: 1.5; }
 
-  .titulo-relatorio { font-size: 1.6rem; color: #1a2847; margin: 10px 0 4px; }
+  .titulo-relatorio { font-size: 1.6rem; color: #1E3A2A; margin: 10px 0 4px; }
   .subtitulo { color: #8b8477; font-size: .9rem; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 18px; }
 
   .filtros-aplicados {
-    background: #f6f3ec; border-left: 3px solid #c9a961; padding: 10px 14px;
+    background: #F5F0E6; border-left: 3px solid #B8941F; padding: 10px 14px;
     font-size: .85rem; color: #4a4a4a; margin-bottom: 18px;
   }
-  .filtros-aplicados strong { color: #1a2847; }
+  .filtros-aplicados strong { color: #1E3A2A; }
 
   .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 22px; }
-  .kpi-box { border: 1px solid #e9e4d6; border-top: 3px solid #c9a961; padding: 10px 14px; border-radius: 4px; }
+  .kpi-box { border: 1px solid #e9e4d6; border-top: 3px solid #B8941F; padding: 10px 14px; border-radius: 4px; }
   .kpi-box .lbl { color: #8b8477; font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 600; }
-  .kpi-box .num { font-family: 'Cormorant Garamond', serif; font-size: 1.7rem; color: #1a2847; font-weight: 700; }
+  .kpi-box .num { font-family: 'Cormorant Garamond', serif; font-size: 1.7rem; color: #1E3A2A; font-weight: 700; }
 
-  .section-title { font-family: 'Inter', sans-serif; color: #1a2847; font-size: .85rem;
+  .section-title { font-family: 'Inter', sans-serif; color: #1E3A2A; font-size: .85rem;
                    text-transform: uppercase; letter-spacing: 2px; font-weight: 600;
-                   border-bottom: 1px solid #c9a961; padding-bottom: 6px; margin: 20px 0 10px; }
+                   border-bottom: 1px solid #B8941F; padding-bottom: 6px; margin: 20px 0 10px; }
 
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
   .chart-card { border: 1px solid #e9e4d6; padding: 10px 12px 6px; border-radius: 4px; }
-  .chart-card h4 { font-size: .95rem; color: #1a2847; margin: 2px 0 8px; }
+  .chart-card h4 { font-size: .95rem; color: #1E3A2A; margin: 2px 0 8px; }
   canvas { max-height: 230px; }
 
   table { width: 100%; border-collapse: collapse; font-size: .78rem; }
   th, td { padding: 6px 8px; border-bottom: 1px solid #e9e4d6; text-align: left; }
-  th { background: #1a2847; color: #fff; font-weight: 600; letter-spacing: .5px; }
+  th { background: #1E3A2A; color: #fff; font-weight: 600; letter-spacing: .5px; }
 
   .rodape { margin-top: 28px; padding-top: 10px; border-top: 1px solid #e9e4d6;
             font-size: .72rem; color: #8b8477; display: flex; justify-content: space-between; }
 
   .no-print { position: fixed; top: 12px; right: 12px; z-index: 100; }
   .no-print button {
-    background: #1a2847; color: #fff; border: 0; padding: 10px 20px;
+    background: #1E3A2A; color: #fff; border: 0; padding: 10px 20px;
     border-radius: 4px; cursor: pointer; font-weight: 600; letter-spacing: .5px;
     box-shadow: 0 2px 8px rgba(0,0,0,.15);
   }
-  .no-print button:hover { background: #0f1a33; }
+  .no-print button:hover { background: #142821; }
   @media print { .no-print { display: none !important; } .page-break { page-break-before: always; } }
 </style></head><body>
 
@@ -709,8 +824,8 @@ RELATORIO_TPL = """
 </div>
 
 <script>
-const PD_NAVY = '#1a2847', PD_GOLD = '#c9a961';
-const cores = ['#1a2847','#c9a961','#2d4068','#8b7340','#4a5e85','#b8975a','#5c7098','#a68846','#2b3b5f','#7a6238'];
+const PD_NAVY = '#1E3A2A', PD_GOLD = '#B8941F';
+const cores = ['#1E3A2A','#B8941F','#16A34A','#2E5540','#8F6E17','#0F6E31','#426F57','#6B5110','#1C8440','#8D9B8E'];
 Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
 Chart.defaults.animation = false;
 
