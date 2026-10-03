@@ -489,5 +489,113 @@ def dashboard():
     )
 
 
+#  ---------------- Assinaturas (webhook Kiwify + admin) ---------------- #
+
+import os
+import hmac
+import hashlib
+import json
+
+from flask import jsonify, abort, Response as _Resp, request as _req
+
+from . import assinaturas as _assin
+
+KIWIFY_WEBHOOK_TOKEN = os.environ.get("KIWIFY_WEBHOOK_TOKEN", "")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+
+
+def _valida_assinatura_kiwify(req) -> bool:
+    """A Kiwify envia a assinatura HMAC-SHA1 na querystring (?signature=...).
+    Se KIWIFY_WEBHOOK_TOKEN não estiver setado, aceita tudo (modo dev).
+    """
+    if not KIWIFY_WEBHOOK_TOKEN:
+        return True
+    sig = req.args.get("signature") or req.headers.get("X-Kiwify-Signature") or ""
+    if not sig:
+        return False
+    calc = hmac.new(
+        KIWIFY_WEBHOOK_TOKEN.encode("utf-8"),
+        req.get_data(),
+        hashlib.sha1,
+    ).hexdigest()
+    return hmac.compare_digest(sig, calc)
+
+
+@app.route("/webhook/kiwify", methods=["POST"])
+def webhook_kiwify():
+    if not _valida_assinatura_kiwify(_req):
+        return jsonify({"ok": False, "erro": "assinatura inválida"}), 401
+    try:
+        payload = _req.get_json(force=True, silent=True) or json.loads(_req.get_data() or b"{}")
+    except Exception as e:
+        return jsonify({"ok": False, "erro": f"payload inválido: {e}"}), 400
+    resultado = _assin.processar_webhook_kiwify(payload)
+    status = 200 if resultado.get("ok") else 400
+    return jsonify(resultado), status
+
+
+def _check_admin():
+    auth = _req.authorization
+    if not ADMIN_PASSWORD:
+        abort(503, "ADMIN_PASSWORD não configurado no .env")
+    if not auth or auth.username != "admin" or auth.password != ADMIN_PASSWORD:
+        return _Resp(
+            "Login necessário", 401,
+            {"WWW-Authenticate": 'Basic realm="Peritus Admin"'},
+        )
+    return None
+
+
+ADMIN_TPL = """
+<!doctype html><html lang=pt-br><head><meta charset=utf-8>
+<title>Assinantes · Peritus Dominus</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>body{padding:20px}</style></head><body>
+<h1>Assinantes — Peritus Dominus · Nomeações SIGEO</h1>
+<p class=text-muted>{{ ativos }} ativos / {{ total }} totais ·
+   <a href="/admin/regenerar">Forçar regeração do ngrok</a></p>
+<table class="table table-striped table-sm">
+<thead><tr><th>Email</th><th>Nome</th><th>Status</th><th>Order</th>
+  <th>Criado em</th><th>Atualizado</th><th>Cancelado</th></tr></thead><tbody>
+{% for a in itens %}
+<tr>
+  <td>{{ a.email }}</td>
+  <td>{{ a.nome or '' }}</td>
+  <td><span class="badge
+     {% if a.status=='ativo' %}bg-success{% else %}bg-secondary{% endif %}">
+     {{ a.status }}</span></td>
+  <td>{{ a.kiwify_order_id or '' }}</td>
+  <td>{{ a.criado_em.strftime('%d/%m/%Y %H:%M') if a.criado_em else '' }}</td>
+  <td>{{ a.atualizado_em.strftime('%d/%m/%Y %H:%M') if a.atualizado_em else '' }}</td>
+  <td>{{ a.cancelado_em.strftime('%d/%m/%Y %H:%M') if a.cancelado_em else '' }}</td>
+</tr>
+{% endfor %}
+</tbody></table></body></html>
+"""
+
+
+@app.route("/admin/assinantes")
+def admin_assinantes():
+    bloq = _check_admin()
+    if bloq is not None:
+        return bloq
+    itens = _assin.listar_todos()
+    ativos = sum(1 for a in itens if a["status"] == "ativo")
+    return render_template_string(
+        ADMIN_TPL, itens=itens, total=len(itens), ativos=ativos,
+    )
+
+
+@app.route("/admin/regenerar")
+def admin_regenerar():
+    bloq = _check_admin()
+    if bloq is not None:
+        return bloq
+    _assin.regenerar_ngrok_yml()
+    ok = _assin.reload_ngrok()
+    return jsonify({"ok": True, "ngrok_reiniciado": ok,
+                    "emails": _assin._emails_ativos()})
+
+
 def main(host: str = "127.0.0.1", port: int = 5001):
     app.run(host=host, port=port, debug=False)
