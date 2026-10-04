@@ -1064,6 +1064,7 @@ ADMIN_TPL = """
 <style>body{padding:20px}</style></head><body>
 <h1>Assinantes — Peritus Dominus · Nomeações SIGEO</h1>
 <p class=text-muted>{{ ativos }} ativos / {{ total }} totais ·
+   <a href="/admin/adicionar"><strong>+ Dar acesso</strong></a> ·
    <a href="/admin/regenerar">Forçar regeração do ngrok</a></p>
 <table class="table table-striped table-sm">
 <thead><tr><th>Email</th><th>Nome</th><th>Status</th><th>Order</th>
@@ -1106,6 +1107,113 @@ def admin_regenerar():
     ok = _assin.reload_ngrok()
     return jsonify({"ok": True, "ngrok_reiniciado": ok,
                     "emails": _assin._emails_ativos()})
+
+
+ADICIONAR_TPL = """
+<!doctype html><html lang=pt-br><head><meta charset=utf-8>
+<title>Dar acesso · Peritus Dominus</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --navy:#1E3A2A; --navy2:#142821; --gold:#B8941F; --cream:#F5F0E6; --green:#16A34A; --red:#C53030; }
+  html, body { background: var(--cream); font-family: 'Inter', system-ui, sans-serif; color:#2C2C2C; }
+  .brand { font-family:'Cormorant Garamond', Georgia, serif; }
+  .pd-header { background: linear-gradient(135deg,var(--navy),var(--navy2)); color:#fff; padding:20px 28px; border-bottom:3px solid var(--gold); display:flex; justify-content:space-between; align-items:center; }
+  .pd-header h1 { margin:0; font-size:1.5rem; font-weight:700; }
+  .pd-header small { color:var(--gold); font-size:.7rem; letter-spacing:2px; text-transform:uppercase; }
+  .pd-header a { color:#fff; text-decoration:none; opacity:.85; font-size:.9rem; }
+  .pd-header a:hover { color: var(--gold); opacity:1; }
+  .wrap { max-width: 560px; margin: 40px auto; padding: 0 20px; }
+  .card-form { background:#fff; border-radius:10px; box-shadow:0 2px 10px rgba(30,58,42,.08); border-top:3px solid var(--gold); padding: 32px; }
+  .card-form h2 { font-family:'Cormorant Garamond', serif; color: var(--navy); margin:0 0 6px; font-size: 1.8rem; }
+  .card-form p.sub { color:#8B8477; font-size:.9rem; margin-bottom: 24px; }
+  label { font-size:.72rem; letter-spacing:1px; text-transform:uppercase; color:#8B8477; font-weight:600; margin-bottom:4px; }
+  .form-control:focus { border-color: var(--gold); box-shadow:0 0 0 .2rem rgba(184,148,31,.2); }
+  .btn-primary { background: var(--navy); border:0; font-weight:600; padding:10px 24px; }
+  .btn-primary:hover { background: var(--navy2); color: var(--gold); }
+  .btn-outline-secondary { color: var(--navy); border-color: var(--navy); }
+  .alert-success { background: #d1f4dd; color: #0f5f2a; border-color: #16A34A; }
+  .alert-danger { background: #ffe5e5; color: var(--red); border-color: var(--red); }
+</style></head><body>
+
+<header class="pd-header">
+  <div><h1 class="brand">Dar acesso</h1>
+  <small>Peritus Dominus · Nomeações SIGEO</small></div>
+  <div>
+    <a href="/admin/assinantes">← Lista de assinantes</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  {% if mensagem %}
+    <div class="alert alert-{{ tipo_alerta or 'success' }}">{{ mensagem }}</div>
+  {% endif %}
+
+  <div class="card-form">
+    <h2>Liberar acesso ao painel</h2>
+    <p class="sub">Adiciona um e-mail à lista de autorizados. A pessoa entra via login Google em <code>peso-unbaked-hydrogen.ngrok-free.dev</code>.</p>
+
+    <form method="post" action="/admin/adicionar">
+      <div class="mb-3">
+        <label for="email" class="form-label d-block">E-mail Google *</label>
+        <input type="email" name="email" id="email" required class="form-control" placeholder="pessoa@gmail.com">
+      </div>
+      <div class="mb-3">
+        <label for="nome" class="form-label d-block">Nome</label>
+        <input type="text" name="nome" id="nome" class="form-control" placeholder="Nome da pessoa (opcional)">
+      </div>
+      <div class="mb-3">
+        <label for="tipo" class="form-label d-block">Origem</label>
+        <select name="tipo" id="tipo" class="form-select">
+          <option value="CORTESIA">Cortesia (acesso grátis)</option>
+          <option value="TESTE">Trial / teste</option>
+          <option value="MANUAL">Pagamento manual (fora Kiwify)</option>
+          <option value="FUNDADOR">Fundador / sócio</option>
+        </select>
+      </div>
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">Dar acesso</button>
+        <a href="/admin/assinantes" class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+
+</div>
+</body></html>
+"""
+
+
+@app.route("/admin/adicionar", methods=["GET", "POST"])
+def admin_adicionar():
+    bloq = _check_admin()
+    if bloq is not None:
+        return bloq
+
+    mensagem = None
+    tipo_alerta = None
+
+    if _req.method == "POST":
+        email = (_req.form.get("email") or "").strip().lower()
+        nome = (_req.form.get("nome") or "").strip() or None
+        tipo = (_req.form.get("tipo") or "CORTESIA").strip()
+        if not email or "@" not in email:
+            mensagem = "E-mail inválido."
+            tipo_alerta = "danger"
+        else:
+            try:
+                _assin.upsert_assinante(email, nome, tipo, None, "ativo", {"origem": tipo})
+                _assin.regenerar_ngrok_yml()
+                _assin.reload_ngrok()
+                mensagem = f"✓ Acesso liberado para {email}. ngrok recarregando."
+                tipo_alerta = "success"
+            except Exception as e:
+                mensagem = f"Erro ao salvar: {e}"
+                tipo_alerta = "danger"
+
+    return render_template_string(
+        ADICIONAR_TPL, mensagem=mensagem, tipo_alerta=tipo_alerta,
+    )
 
 
 def main(host: str = "127.0.0.1", port: int = 5001):
