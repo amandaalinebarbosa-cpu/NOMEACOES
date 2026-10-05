@@ -8,7 +8,7 @@ import csv
 import io
 from datetime import date, datetime
 
-from flask import Flask, render_template_string, request, Response
+from flask import Flask, render_template_string, request, Response, make_response
 
 from . import db
 
@@ -110,6 +110,7 @@ TPL = """
     <a href="/export?{{ query_string }}">CSV</a>
     <a href="/export/xlsx?{{ query_string }}">📊 Excel</a>
     <a href="/relatorio?{{ query_string }}" class="btn-print">📄 Gerar Relatório PDF</a>
+    <a href="/sair" title="Sair da conta Google" style="margin-left:14px;">⎋ Sair</a>
   </nav>
 </header>
 
@@ -548,6 +549,7 @@ DASH_TPL = """
     <a href="/export?{{ query_string }}">CSV</a>
     <a href="/export/xlsx?{{ query_string }}">📊 Excel</a>
     <a href="/relatorio?{{ query_string }}" class="btn-print">📄 Gerar Relatório PDF</a>
+    <a href="/sair" title="Sair da conta Google" style="margin-left:14px;">⎋ Sair</a>
   </nav>
 </header>
 
@@ -1214,6 +1216,92 @@ def admin_adicionar():
     return render_template_string(
         ADICIONAR_TPL, mensagem=mensagem, tipo_alerta=tipo_alerta,
     )
+
+
+SAIR_TPL = """
+<!doctype html><html lang="pt-br"><head>
+<meta charset="utf-8"><title>Sair · Peritus Dominus</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --navy:#1E3A2A; --navy2:#142821; --gold:#B8941F; --cream:#F5F0E6; --green:#16A34A; --mute:#8B8477; }
+  html, body { margin:0; padding:0; background:var(--cream); color:#2C2C2C;
+               font-family:'Inter', system-ui, sans-serif; }
+  .wrap { max-width: 480px; margin: 60px auto; padding: 0 20px; text-align: center; }
+  .seal {
+    width: 72px; height: 72px; border: 2px solid var(--gold); border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--gold); font-family: 'Cormorant Garamond', serif;
+    font-size: 32px; font-weight: 700; margin-bottom: 20px;
+  }
+  h1 { font-family: 'Cormorant Garamond', Georgia, serif; color: var(--navy);
+       font-size: 2rem; margin: 0 0 10px; }
+  p { color: var(--mute); line-height: 1.6; font-size: .95rem; }
+  .card {
+    background: #fff; border-radius: 10px; border-top: 3px solid var(--gold);
+    padding: 36px 30px; box-shadow: 0 2px 10px rgba(30,58,42,.08); margin-top: 20px;
+  }
+  .step { text-align: left; padding: 12px 0; border-bottom: 1px solid #E9E4D6; }
+  .step:last-child { border-bottom: 0; }
+  .step strong { color: var(--navy); display: block; margin-bottom: 4px; }
+  .step small { color: var(--mute); }
+  .btn {
+    display: inline-block; padding: 12px 28px; border-radius: 6px;
+    text-decoration: none; font-weight: 600; font-size: .95rem;
+    margin: 6px 4px; letter-spacing: .3px;
+  }
+  .btn-navy { background: var(--navy); color: #fff; }
+  .btn-navy:hover { background: var(--navy2); color: var(--gold); }
+  .btn-ghost { color: var(--navy); border: 1px solid var(--navy); }
+  .btn-ghost:hover { background: var(--navy); color: #fff; }
+  .ok { color: var(--green); font-size: 2.5rem; margin: 10px 0; }
+</style></head><body>
+<div class="wrap">
+  <div class="seal">PD</div>
+  <h1>Você saiu</h1>
+  <p>Sessão encerrada no Peritus Dominus Nomeações SIGEO.</p>
+
+  <div class="card">
+    <div class="ok">✓</div>
+    <p style="color:#2C2C2C; font-weight:500;">Para reentrar, abra o link novamente e escolha a conta Google.</p>
+
+    <div style="margin-top: 20px;">
+      <a href="https://peso-unbaked-hydrogen.ngrok-free.dev" class="btn btn-navy">Entrar de novo</a>
+      <a href="https://www.peritusdominus.com.br/nomeacoes" class="btn btn-ghost">Ir ao site</a>
+    </div>
+  </div>
+
+  <div style="margin-top: 24px; text-align: left; font-size: .85rem; color: var(--mute);">
+    <p><strong style="color: var(--navy);">Dica:</strong> Para desconectar completamente a conta Google deste computador,
+    acesse <a href="https://myaccount.google.com/permissions" target="_blank" style="color: var(--gold);">myaccount.google.com/permissions</a>
+    e remova o acesso de "Peritus Dominus" ou "ngrok".</p>
+  </div>
+</div>
+
+<script>
+  // Limpa qualquer sessão/cache local
+  try { localStorage.clear(); sessionStorage.clear(); } catch(e) {}
+  // Limpa cookies do próprio domínio
+  document.cookie.split(';').forEach(c => {
+    const n = c.split('=')[0].trim();
+    document.cookie = n + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+  });
+</script>
+</body></html>
+"""
+
+
+@app.route("/sair")
+def sair():
+    """Página de logout: limpa cookies/localStorage e orienta próximos passos.
+    O OAuth do ngrok mantém a sessão em cookie no domínio do túnel;
+    o script da página limpa-os. Para revogar totalmente, usuário vai
+    ao myaccount.google.com/permissions."""
+    resp = make_response(render_template_string(SAIR_TPL))
+    # Headers de "não cachear" para forçar logout limpo
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    resp.headers["Pragma"] = "no-cache"
+    return resp
 
 
 def main(host: str = "127.0.0.1", port: int = 5001):
