@@ -126,30 +126,40 @@ def regenerar_ngrok_yml() -> Path:
 
 
 def reload_ngrok() -> bool:
-    """Reinicia o ngrok via launchctl (se instalado) ou mata o processo pra respawn."""
-    label = "com.ngrok.dashboard"
-    try:
-        r = subprocess.run(
-            ["launchctl", "kickstart", "-k", f"gui/{os.getuid()}/{label}"],
-            check=False, capture_output=True, text=True, timeout=10,
-        )
-        if r.returncode == 0:
-            log.info("ngrok reiniciado via launchctl")
-            return True
-    except FileNotFoundError:
-        pass
+    """Reinicia o ngrok. Tenta launchctl (serviço gerenciado) e cai pra SIGTERM.
 
-    # fallback: matar o processo (ele volta se tiver KeepAlive, ou será manual)
+    Com launchd KeepAlive=true, basta matar o processo que ele volta sozinho
+    com o yml atualizado em ~2s — então o SIGTERM é o caminho mais confiável.
+    """
+    # 1) caminho rápido e confiável: matar — launchd ressuscita
+    killed = 0
     try:
         out = subprocess.check_output(["pgrep", "-f", "ngrok start"], text=True)
         for pid in out.strip().split("\n"):
             if pid:
                 os.kill(int(pid), signal.SIGTERM)
-        log.info("ngrok sinalizado via pgrep/SIGTERM")
-        return True
+                killed += 1
+        if killed:
+            log.info("ngrok sinalizado via SIGTERM (%d PIDs); launchd deve ressuscitar", killed)
+            return True
     except subprocess.CalledProcessError:
-        log.warning("ngrok não encontrado em execução")
-        return False
+        pass  # pgrep não achou
+
+    # 2) fallback: tentar kickstart dos labels conhecidos (compat)
+    for label in ("com.peritusdominus.ngrok", "com.ngrok.dashboard"):
+        try:
+            r = subprocess.run(
+                ["launchctl", "kickstart", "-k", f"gui/{os.getuid()}/{label}"],
+                check=False, capture_output=True, text=True, timeout=5,
+            )
+            if r.returncode == 0:
+                log.info("ngrok reiniciado via launchctl (%s)", label)
+                return True
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            continue
+
+    log.warning("ngrok não encontrado em execução; a próxima tentativa dependerá do launchd")
+    return False
 
 
 # ----------------------------- processar webhook ----------------------------- #
