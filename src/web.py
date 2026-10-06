@@ -97,6 +97,15 @@ TPL = """
 </style>
 </head><body>
 
+<div style="background:#142821; color:#B8941F; padding:7px 28px; font-size:.78rem; letter-spacing:1px; text-align:right; font-weight:500;">
+  {% if _ultima_data %}
+    Base atualizada em <strong style="color:#fff;">{% if _atualizado_em %}{{ _atualizado_em }}{% else %}{{ _ultima_data }}{% endif %}</strong>
+    · {{ "{:,}".format(_total_db).replace(",", ".") }} nomeações
+  {% else %}
+    Última atualização: carregando…
+  {% endif %}
+</div>
+
 {% if _backfill_running %}
 <div style="background:#B8941F; color:#1E3A2A; padding:12px 28px; font-size:.9rem; font-weight:600; display:flex; align-items:center; gap:12px; letter-spacing:.3px;">
   <span style="width:10px; height:10px; border-radius:50%; background:#1E3A2A; display:inline-block; animation: pdpulse 1.4s infinite;"></span>
@@ -543,6 +552,15 @@ DASH_TPL = """
   .section-title { color: var(--pd-navy); font-size: 1rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; font-family: 'Inter', sans-serif; margin: 28px 0 14px; padding-left: 10px; border-left: 3px solid var(--pd-gold); }
 </style>
 </head><body>
+
+<div style="background:#142821; color:#B8941F; padding:7px 28px; font-size:.78rem; letter-spacing:1px; text-align:right; font-weight:500;">
+  {% if _ultima_data %}
+    Base atualizada em <strong style="color:#fff;">{% if _atualizado_em %}{{ _atualizado_em }}{% else %}{{ _ultima_data }}{% endif %}</strong>
+    · {{ "{:,}".format(_total_db).replace(",", ".") }} nomeações
+  {% else %}
+    Última atualização: carregando…
+  {% endif %}
+</div>
 
 {% if _backfill_running %}
 <div style="background:#B8941F; color:#1E3A2A; padding:12px 28px; font-size:.9rem; font-weight:600; display:flex; align-items:center; gap:12px; letter-spacing:.3px;">
@@ -1350,10 +1368,69 @@ def _backfill_status():
     return _BACKFILL_CACHE
 
 
+_ULTIMA_CACHE = {"ts": 0, "data": None, "total": 0, "atualizado_em": None}
+
+
+def _ultima_atualizacao():
+    """Última data de nomeação + total + momento da última inserção. Cache 60s."""
+    now = _time.time()
+    if now - _ULTIMA_CACHE["ts"] < 60:
+        return _ULTIMA_CACHE
+    try:
+        with db.connect() as conn, conn.cursor() as cur:
+            cur.execute("SELECT MAX(data_nomeacao), COUNT(*) FROM nomeacao")
+            data, total = cur.fetchone()
+            atualizado_em = None
+            try:
+                cur.execute("SELECT MAX(criado_em) FROM nomeacao")
+                atualizado_em = cur.fetchone()[0]
+            except Exception:
+                pass
+            if atualizado_em is None:
+                try:
+                    cur.execute("SELECT MAX(fim) FROM coleta_log WHERE ok = true")
+                    atualizado_em = cur.fetchone()[0]
+                except Exception:
+                    pass
+            _ULTIMA_CACHE.update({
+                "ts": now, "data": data, "total": total or 0,
+                "atualizado_em": atualizado_em,
+            })
+    except Exception:
+        pass
+    return _ULTIMA_CACHE
+
+
 @app.context_processor
 def _inject_backfill():
     s = _backfill_status()
-    return {"_backfill_running": s["running"]}
+    u = _ultima_atualizacao()
+    atualizado = u["atualizado_em"]
+    return {
+        "_backfill_running": s["running"],
+        "_ultima_data": u["data"].strftime("%d/%m/%Y") if u["data"] else None,
+        "_atualizado_em": atualizado.strftime("%d/%m/%Y às %H:%M") if atualizado else None,
+        "_total_db": u["total"],
+    }
+
+
+@app.route("/api/stats")
+def api_stats():
+    """Endpoint JSON público para a landing externa consumir (CORS liberado)."""
+    s = _backfill_status()
+    u = _ultima_atualizacao()
+    body = {
+        "ultima_data": u["data"].isoformat() if u["data"] else None,
+        "ultima_data_br": u["data"].strftime("%d/%m/%Y") if u["data"] else None,
+        "atualizado_em": u["atualizado_em"].isoformat() if u["atualizado_em"] else None,
+        "atualizado_em_br": u["atualizado_em"].strftime("%d/%m/%Y às %H:%M") if u["atualizado_em"] else None,
+        "total": u["total"],
+        "backfill_rodando": s["running"],
+    }
+    r = jsonify(body)
+    r.headers["Access-Control-Allow-Origin"] = "*"
+    r.headers["Cache-Control"] = "public, max-age=60"
+    return r
 
 
 BACKFILL_TPL = """

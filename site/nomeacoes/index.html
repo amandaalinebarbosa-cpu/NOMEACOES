@@ -138,9 +138,20 @@
     .plano-card { padding: 30px 24px; }
     .plano-card .preco { font-size: 3rem; }
   }
+
+  /* ATUALIZAÇÃO BAR */
+  .update-bar { background: #142821; color: var(--pd-gold); padding: 7px 28px; font-size: .78rem; letter-spacing: 1px; text-align: center; font-weight: 500; }
+  .update-bar strong { color: #fff; }
+  .update-bar .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--pd-gold); display: inline-block; vertical-align: middle; margin-right: 6px; animation: updpulse 1.6s infinite; }
+  @keyframes updpulse { 0%{opacity:.3} 50%{opacity:1} 100%{opacity:.3} }
 </style>
 </head>
 <body>
+
+<div class="update-bar" id="updateBar">
+  <span class="pulse"></span>
+  <span id="updateText">Carregando última atualização…</span>
+</div>
 
 <header>
   <div class="brand">
@@ -252,6 +263,26 @@
     AASB Consultoria · CNPJ 57.091.187/0001-01
   </div>
 </footer>
+
+<script>
+  // Puxa stats ao vivo do backend Flask via ngrok
+  (function() {
+    const API = 'https://peso-unbaked-hydrogen.ngrok-free.dev/api/stats';
+    const txt = document.getElementById('updateText');
+    const bar = document.getElementById('updateBar');
+    fetch(API, { headers: { 'ngrok-skip-browser-warning': 'true' } })
+      .then(r => r.json())
+      .then(d => {
+        const total = (d.total || 0).toLocaleString('pt-BR');
+        const quando = d.atualizado_em_br || d.ultima_data_br || '—';
+        txt.innerHTML = `Base atualizada em <strong>${quando}</strong> · ${total} nomeações` +
+          (d.backfill_rodando ? ' · <strong>atualização em andamento</strong>' : '');
+      })
+      .catch(() => {
+        txt.textContent = 'Base atualizada mensalmente — mais de 3M de nomeações';
+      });
+  })();
+</script>
 
 </body>
 </html>
