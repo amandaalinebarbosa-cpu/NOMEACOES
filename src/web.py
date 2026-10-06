@@ -97,6 +97,14 @@ TPL = """
 </style>
 </head><body>
 
+{% if _backfill_running %}
+<div style="background:#B8941F; color:#1E3A2A; padding:12px 28px; font-size:.9rem; font-weight:600; display:flex; align-items:center; gap:12px; letter-spacing:.3px;">
+  <span style="width:10px; height:10px; border-radius:50%; background:#1E3A2A; display:inline-block; animation: pdpulse 1.4s infinite;"></span>
+  Estamos atualizando o banco de dados — alguns números e resultados podem estar temporariamente incompletos.
+  <style>@keyframes pdpulse{0%{opacity:.3}50%{opacity:1}100%{opacity:.3}}</style>
+</div>
+{% endif %}
+
 <header class="pd-header">
   <div class="brand">
     <span class="seal">PD</span>
@@ -535,6 +543,14 @@ DASH_TPL = """
   .section-title { color: var(--pd-navy); font-size: 1rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; font-family: 'Inter', sans-serif; margin: 28px 0 14px; padding-left: 10px; border-left: 3px solid var(--pd-gold); }
 </style>
 </head><body>
+
+{% if _backfill_running %}
+<div style="background:#B8941F; color:#1E3A2A; padding:12px 28px; font-size:.9rem; font-weight:600; display:flex; align-items:center; gap:12px; letter-spacing:.3px;">
+  <span style="width:10px; height:10px; border-radius:50%; background:#1E3A2A; display:inline-block; animation: pdpulse 1.4s infinite;"></span>
+  Estamos atualizando o banco de dados — alguns números e resultados podem estar temporariamente incompletos.
+  <style>@keyframes pdpulse{0%{opacity:.3}50%{opacity:1}100%{opacity:.3}}</style>
+</div>
+{% endif %}
 
 <header class="pd-header">
   <div class="brand">
@@ -1067,6 +1083,7 @@ ADMIN_TPL = """
 <h1>Assinantes — Peritus Dominus · Nomeações SIGEO</h1>
 <p class=text-muted>{{ ativos }} ativos / {{ total }} totais ·
    <a href="/admin/adicionar"><strong>+ Dar acesso</strong></a> ·
+   <a href="/admin/backfill">Monitor de backfill</a> ·
    <a href="/admin/regenerar">Forçar regeração do ngrok</a></p>
 <table class="table table-striped table-sm">
 <thead><tr><th>Email</th><th>Nome</th><th>Status</th><th>Order</th>
@@ -1302,6 +1319,200 @@ def sair():
     resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     resp.headers["Pragma"] = "no-cache"
     return resp
+
+
+# =========================================================================
+# Banner público "Estamos atualizando" + painel /admin/backfill
+# =========================================================================
+
+import glob
+import time as _time
+from pathlib import Path as _Path
+
+_BACKFILL_CACHE = {"ts": 0, "running": 0, "pids": []}
+
+
+def _backfill_status():
+    """Conta quantos processos de backfill estão rodando. Cacheia 5s."""
+    now = _time.time()
+    if now - _BACKFILL_CACHE["ts"] < 5:
+        return _BACKFILL_CACHE
+    pids = []
+    try:
+        import subprocess as _sp
+        out = _sp.check_output(
+            ["pgrep", "-f", "src.cli backfill"], text=True, timeout=2
+        )
+        pids = [int(p) for p in out.strip().split("\n") if p]
+    except Exception:
+        pass
+    _BACKFILL_CACHE.update({"ts": now, "running": len(pids), "pids": pids})
+    return _BACKFILL_CACHE
+
+
+@app.context_processor
+def _inject_backfill():
+    s = _backfill_status()
+    return {"_backfill_running": s["running"]}
+
+
+BACKFILL_TPL = """
+<!doctype html><html lang=pt-br><head><meta charset=utf-8>
+<title>Backfill · Peritus Dominus</title>
+<meta http-equiv="refresh" content="15">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --navy:#1E3A2A; --navy2:#142821; --gold:#B8941F; --cream:#F5F0E6; --green:#16A34A; --mute:#8B8477; --line:#E9E4D6; }
+  body { margin:0; font-family:'Inter', system-ui, sans-serif; background:var(--cream); color:#2C2C2C; }
+  .head { background:linear-gradient(135deg,var(--navy),var(--navy2)); color:#fff; padding:22px 28px; border-bottom:3px solid var(--gold); display:flex; justify-content:space-between; align-items:center; }
+  .head h1 { font-family:'Cormorant Garamond', serif; margin:0; font-size:1.5rem; }
+  .head small { color:var(--gold); font-size:.7rem; letter-spacing:2px; text-transform:uppercase; }
+  .head a { color:#fff; text-decoration:none; opacity:.85; font-size:.9rem; }
+  .wrap { max-width:1100px; margin:30px auto; padding:0 20px; }
+  .status { background:#fff; padding:22px 26px; border-radius:10px; border-top:3px solid var(--gold); box-shadow:0 1px 4px rgba(30,58,42,.08); margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; }
+  .status .big { font-family:'Cormorant Garamond', serif; font-size:3rem; font-weight:700; color:var(--navy); line-height:1; }
+  .status .lbl { color:var(--mute); font-size:.72rem; letter-spacing:1.5px; text-transform:uppercase; font-weight:600; }
+  .status .pulse { width:12px; height:12px; border-radius:50%; display:inline-block; margin-right:8px; vertical-align:middle; }
+  .pulse.on { background:var(--green); box-shadow:0 0 0 0 rgba(22,163,74,.4); animation:pulse 1.6s infinite; }
+  .pulse.off { background:#aaa; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(22,163,74,.4)} 70%{box-shadow:0 0 0 14px rgba(22,163,74,0)} 100%{box-shadow:0 0 0 0 rgba(22,163,74,0)} }
+  .totals { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:20px; }
+  .totals .card { background:#fff; padding:18px 22px; border-radius:10px; border-top:3px solid var(--gold); box-shadow:0 1px 4px rgba(30,58,42,.08); }
+  .totals .num { font-family:'Cormorant Garamond', serif; font-size:2rem; font-weight:700; color:var(--navy); }
+  .totals .lbl { color:var(--mute); font-size:.72rem; letter-spacing:1.5px; text-transform:uppercase; font-weight:600; }
+  .logs { background:#fff; border-radius:10px; padding:20px; box-shadow:0 1px 4px rgba(30,58,42,.08); }
+  .logs h3 { color:var(--navy); font-family:'Cormorant Garamond', serif; margin-top:0; }
+  table { width:100%; border-collapse:collapse; font-size:.85rem; }
+  th { background:var(--navy); color:#fff; text-align:left; padding:8px 10px; font-size:.72rem; letter-spacing:1px; text-transform:uppercase; }
+  td { padding:8px 10px; border-bottom:1px solid var(--line); }
+  tr:nth-child(even) { background:#fafaf5; }
+  .ok { color:var(--green); font-weight:600; }
+  .running { color:var(--gold); font-weight:600; }
+  .fail { color:#C53030; font-weight:600; }
+  code { background:#f6f3ec; padding:2px 6px; border-radius:3px; font-size:.8rem; }
+  .refresh { color:var(--mute); font-size:.75rem; margin-top:12px; text-align:center; }
+</style></head><body>
+
+<header class="head">
+  <div>
+    <h1>Monitor de Backfill</h1>
+    <small>Peritus Dominus · Atualização em massa</small>
+  </div>
+  <a href="/admin/assinantes">← Assinantes</a>
+</header>
+
+<div class="wrap">
+  <div class="status">
+    <div>
+      <div class="lbl">Status do backfill</div>
+      <div class="big">
+        <span class="pulse {% if running %}on{% else %}off{% endif %}"></span>
+        {% if running %}{{ running }} rodando{% else %}Parado{% endif %}
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div class="lbl">Última atualização</div>
+      <div style="font-weight:600; color:var(--navy);">{{ agora }}</div>
+    </div>
+  </div>
+
+  <div class="totals">
+    <div class="card">
+      <div class="lbl">Total no banco</div>
+      <div class="num">{{ "{:,}".format(total_db).replace(",", ".") }}</div>
+    </div>
+    <div class="card">
+      <div class="lbl">Novas nos últimos 10 min</div>
+      <div class="num">{{ "{:,}".format(novas_recentes).replace(",", ".") }}</div>
+    </div>
+    <div class="card">
+      <div class="lbl">Última nomeação</div>
+      <div class="num" style="font-size:1.5rem;">{{ ultima_data or "—" }}</div>
+    </div>
+  </div>
+
+  <div class="logs">
+    <h3>Logs ativos ({{ logs|length }})</h3>
+    {% if logs %}
+    <table>
+      <thead><tr><th>TRT</th><th>Última linha do log</th><th>PID</th></tr></thead>
+      <tbody>
+        {% for l in logs %}
+        <tr>
+          <td><code>{{ l.trt }}</code></td>
+          <td>{{ l.tail }}</td>
+          <td>{{ l.pid or '-' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p style="color:var(--mute);">Nenhum log de backfill em execução.</p>
+    {% endif %}
+  </div>
+
+  <div class="refresh">Atualiza automaticamente a cada 15 segundos.</div>
+</div>
+</body></html>
+"""
+
+
+@app.route("/admin/backfill")
+def admin_backfill():
+    bloq = _check_admin()
+    if bloq is not None:
+        return bloq
+
+    status = _backfill_status()
+
+    # último arquivo log de cada TRT
+    logs = []
+    log_dir = _Path(__file__).resolve().parent.parent / "logs"
+    for path in sorted(log_dir.glob("backfill_hist_trt*.log")):
+        trt = path.stem.replace("backfill_hist_trt", "TRT")
+        try:
+            with path.open("rb") as f:
+                f.seek(0, 2)
+                size = f.tell()
+                f.seek(max(0, size - 2048))
+                tail = f.read().decode("utf-8", errors="replace").strip().split("\n")[-1]
+        except Exception:
+            tail = "(sem log)"
+        logs.append({"trt": trt, "tail": tail[:160], "pid": None})
+
+    # KPIs do banco
+    novas = 0
+    with db.connect() as conn, conn.cursor() as cur:
+        cur.execute("SELECT COUNT(*), MAX(data_nomeacao) FROM nomeacao")
+        total_db, ultima = cur.fetchone()
+        try:
+            # se a coluna criado_em existir, mostra últimos 10min
+            cur.execute(
+                "SELECT COUNT(*) FROM nomeacao WHERE criado_em > now() - interval '10 minutes'"
+            )
+            novas = cur.fetchone()[0]
+        except Exception:
+            # fallback: usa IDs crescentes como proxy
+            try:
+                cur.execute(
+                    "SELECT COUNT(*) FROM nomeacao WHERE id > (SELECT COALESCE(MAX(id),0)-5000 FROM nomeacao)"
+                )
+                novas = cur.fetchone()[0]
+            except Exception:
+                novas = 0
+
+    from datetime import datetime as _dt
+    agora = _dt.now().strftime("%d/%m/%Y %H:%M:%S")
+
+    return render_template_string(
+        BACKFILL_TPL,
+        running=status["running"],
+        logs=logs,
+        total_db=total_db,
+        novas_recentes=novas,
+        ultima_data=ultima.strftime("%d/%m/%Y") if ultima else None,
+        agora=agora,
+    )
 
 
 def main(host: str = "127.0.0.1", port: int = 5001):
